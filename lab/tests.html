@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnostic Catalog - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="font-bold">Diagnostic Catalog</h2>
+            <p class="text-muted mt-1">Configure diagnostic lab tests, reference ranges, and test costs.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openAddTestModal()">Add New Test</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-3 mb-5">
+          <input type="text" id="testSearch" class="form-input" placeholder="Search test name or code..." style="max-width: 320px;" oninput="debounceSearch()">
+          <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Reset</button>
+        </div>
+
+        <!-- Catalog Table -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Test Code</th>
+                  <th>Test Name</th>
+                  <th>Sample Type</th>
+                  <th>Reference Ranges / Normal Limits</th>
+                  <th>Test Cost</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="testTableBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Loading diagnostic catalog...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Lab Test Modal -->
+  <div id="testModal" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h4 class="font-bold" id="testModalTitle">Add Diagnostic Test</h4>
+        <button class="btn btn-sm" onclick="closeTestModal()">&times;</button>
+      </div>
+      <form id="testForm" onsubmit="saveTest(event)">
+        <input type="hidden" id="testId">
+        <div class="modal-body">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-group">
+              <label class="form-label" for="testCodeInput">Test Code</label>
+              <input type="text" id="testCodeInput" class="form-input" placeholder="e.g. CBC" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="testNameInput">Test Name</label>
+              <input type="text" id="testNameInput" class="form-input" placeholder="e.g. Complete Blood Count" required>
+            </div>
+            <div class="form-group col-span-2">
+              <label class="form-label" for="testDescInput">Description / Clinical Significance</label>
+              <textarea id="testDescInput" class="form-input" rows="2" placeholder="e.g. Evaluates overall health and detects wide range of disorders..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="testSampleType">Sample Specimen Type</label>
+              <input type="text" id="testSampleType" class="form-input" placeholder="e.g. Whole Blood, Urine" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="testCostInput">Test Charge / Cost ($)</label>
+              <input type="number" id="testCostInput" class="form-input" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="form-group col-span-2">
+              <label class="form-label" for="testRangeInput">Standard Reference Range</label>
+              <textarea id="testRangeInput" class="form-input" rows="3" placeholder="e.g. Red Blood Cells: 4.5 - 5.9 million/mcL&#13;Hemoglobin: 13.5 - 17.5 g/dL" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:.5rem;">
+                <input type="checkbox" id="testActive" checked> Active Catalog Item
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="closeTestModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="testSaveBtn">Save Test</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['lab', 'hospital-admin']);
+
+    const labMenu = [
+      { label: 'Dashboard', path: '../lab/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Test Catalog', path: '../lab/tests.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+      { label: 'Sample Logs', path: '../lab/samples.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>' },
+      { label: 'Result Sheets', path: '../lab/results.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../lab/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(labMenu, '../lab/tests.html', 'Diagnostic Lab', 'Department Console');
+    Utils.renderHeader('Diagnostic Catalog');
+
+    let debounceTimeout;
+
+    async function loadTests(search = '') {
+      try {
+        const query = search ? `?search=${encodeURIComponent(search)}` : '';
+        const res = await API.get(`/lab/tests/${query}`);
+        const tests = res.data.results || res.data || [];
+        renderTable(tests);
+      } catch (err) {
+        Utils.showToast('Failed to load lab tests', 'danger');
+      }
+    }
+
+    function renderTable(tests) {
+      const tbody = document.getElementById('testTableBody');
+      if (tests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No tests configured in the catalog.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = tests.map(t => `
+        <tr>
+          <td><span class="badge badge-secondary font-mono">${t.test_code}</span></td>
+          <td>
+            <strong>${t.name}</strong><br>
+            <span class="text-xs text-muted">${t.description || 'No description'}</span>
+          </td>
+          <td>${t.sample_type}</td>
+          <td><pre style="margin:0;font-family:inherit;font-size:0.75rem;line-height:1.4;white-space:pre-wrap;">${t.reference_range}</pre></td>
+          <td>$${parseFloat(t.cost).toFixed(2)}</td>
+          <td>
+            <span class="badge ${t.is_active ? 'badge-success' : 'badge-danger'}">
+              ${t.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary btn-sm" onclick='openEditTestModal(${JSON.stringify(t).replace(/'/g, "&#39;")})'>Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteTest(${t.id})">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(debounceTimeout);
+      const search = document.getElementById('testSearch').value.trim();
+      debounceTimeout = setTimeout(() => loadTests(search), 350);
+    }
+
+    function clearFilters() {
+      document.getElementById('testSearch').value = '';
+      loadTests();
+    }
+
+    // Modal Operations
+    function openAddTestModal() {
+      document.getElementById('testModalTitle').innerText = 'Add Diagnostic Test';
+      document.getElementById('testForm').reset();
+      document.getElementById('testId').value = '';
+      document.getElementById('testModal').classList.add('active');
+    }
+
+    function openEditTestModal(t) {
+      document.getElementById('testModalTitle').innerText = 'Edit Diagnostic Test';
+      document.getElementById('testId').value = t.id;
+      document.getElementById('testCodeInput').value = t.test_code;
+      document.getElementById('testNameInput').value = t.name;
+      document.getElementById('testDescInput').value = t.description || '';
+      document.getElementById('testSampleType').value = t.sample_type;
+      document.getElementById('testCostInput').value = t.cost;
+      document.getElementById('testRangeInput').value = t.reference_range;
+      document.getElementById('testActive').checked = t.is_active;
+      document.getElementById('testModal').classList.add('active');
+    }
+
+    function closeTestModal() {
+      document.getElementById('testModal').classList.remove('active');
+    }
+
+    async function saveTest(e) {
+      e.preventDefault();
+      const id = document.getElementById('testId').value;
+      const payload = {
+        test_code: document.getElementById('testCodeInput').value,
+        name: document.getElementById('testNameInput').value,
+        description: document.getElementById('testDescInput').value,
+        sample_type: document.getElementById('testSampleType').value,
+        cost: parseFloat(document.getElementById('testCostInput').value),
+        reference_range: document.getElementById('testRangeInput').value,
+        is_active: document.getElementById('testActive').checked
+      };
+
+      try {
+        if (id) {
+          await API.patch(`/lab/tests/${id}/`, payload);
+          Utils.showToast('Test updated successfully', 'success');
+        } else {
+          await API.post('/lab/tests/', payload);
+          Utils.showToast('New test configured in catalog', 'success');
+        }
+        closeTestModal();
+        loadTests();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to save test', 'danger');
+      }
+    }
+
+    async function deleteTest(id) {
+      if (!confirm('Are you sure you want to delete this test?')) return;
+      try {
+        await API.delete(`/lab/tests/${id}/`);
+        Utils.showToast('Test removed from catalog', 'success');
+        loadTests();
+      } catch (err) {
+        Utils.showToast('Failed to delete test', 'danger');
+      }
+    }
+
+    loadTests();
+  </script>
+</body>
+</html>

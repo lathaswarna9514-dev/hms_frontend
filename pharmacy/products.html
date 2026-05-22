@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Catalog - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="font-bold">Medicine Catalog</h2>
+            <p class="text-muted mt-1">Manage hospital pharmacy medicine stocks and reorder rules.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary" onclick="openCategoryModal()">Manage Categories</button>
+            <button class="btn btn-primary" onclick="openAddMedicineModal()">Add Medicine</button>
+          </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="flex gap-3 mb-5 items-center" style="flex-wrap: wrap;">
+          <input type="text" id="catSearch" class="form-input" placeholder="Search medicine name..." style="max-width: 280px;" oninput="debounceSearch()">
+          <select id="catCategoryFilter" class="form-input" style="max-width: 200px;" onchange="loadMedicines()">
+            <option value="">All Categories</option>
+          </select>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="lowStockOnly" onchange="loadMedicines()">
+            <label for="lowStockOnly" class="text-sm font-semibold cursor-pointer">Low Stock Only</label>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="clearFilters()">Reset</button>
+        </div>
+
+        <!-- Catalog Table -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Category</th>
+                  <th>Unit Type</th>
+                  <th>Unit Price</th>
+                  <th>Stock Qty</th>
+                  <th>Reorder Level</th>
+                  <th>Expiry Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="medicineTableBody">
+                <tr><td colspan="8" class="text-center text-muted py-4">Loading medicine inventory...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Medicine Modal -->
+  <div id="medicineModal" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h4 class="font-bold" id="medModalTitle">Add New Medicine</h4>
+        <button class="btn btn-sm" onclick="closeMedicineModal()">&times;</button>
+      </div>
+      <form id="medicineForm" onsubmit="saveMedicine(event)">
+        <input type="hidden" id="medId">
+        <div class="modal-body">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-group col-span-2">
+              <label class="form-label" for="medName">Medicine Name</label>
+              <input type="text" id="medName" class="form-input" placeholder="e.g. Paracetamol 500mg" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medGeneric">Generic Name</label>
+              <input type="text" id="medGeneric" class="form-input" placeholder="e.g. Acetaminophen">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medCategory">Category</label>
+              <select id="medCategory" class="form-input" required>
+                <option value="">Select Category...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medManufacturer">Manufacturer</label>
+              <input type="text" id="medManufacturer" class="form-input" placeholder="e.g. Pfizer">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medUnit">Unit Type</label>
+              <select id="medUnit" class="form-input" required>
+                <option value="tablet">Tablet</option>
+                <option value="capsule">Capsule</option>
+                <option value="syrup">Syrup (ml)</option>
+                <option value="injection">Injection (ml)</option>
+                <option value="cream">Cream (g)</option>
+                <option value="drops">Drops</option>
+                <option value="sachet">Sachet</option>
+                <option value="inhaler">Inhaler</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medPrice">Unit Price ($)</label>
+              <input type="number" id="medPrice" class="form-input" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medStock">Initial Stock Qty</label>
+              <input type="number" id="medStock" class="form-input" min="0" placeholder="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medReorder">Reorder Alert Level</label>
+              <input type="number" id="medReorder" class="form-input" min="1" value="20" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="medExpiry">Expiry Date</label>
+              <input type="date" id="medExpiry" class="form-input">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="closeMedicineModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="medSaveBtn">Save Medicine</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category List Modal -->
+  <div id="categoryModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Medicine Categories</h4>
+        <button class="btn btn-sm" onclick="closeCategoryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryForm" onsubmit="addCategory(event)" class="flex gap-2 mb-4">
+          <input type="text" id="newCatName" class="form-input" placeholder="New category name..." required>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius);">
+          <table class="table" style="margin-bottom:0;">
+            <tbody id="categoryTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['pharmacy', 'hospital-admin']);
+
+    const pharmaMenu = [
+      { label: 'Dashboard', path: '../pharmacy/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Medicine Catalog', path: '../pharmacy/products.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>' },
+      { label: 'Dispense Logs', path: '../pharmacy/orders.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../pharmacy/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(pharmaMenu, '../pharmacy/products.html', 'Pharmacy Unit', 'Department Console');
+    Utils.renderHeader('Medicine Catalog');
+
+    let debounceTimeout;
+    let categoriesList = [];
+
+    // URL parameter pre-load check
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('filter') === 'low_stock') {
+      document.getElementById('lowStockOnly').checked = true;
+    }
+
+    async function loadCategories() {
+      try {
+        const res = await API.get('/pharmacy/categories/');
+        categoriesList = res.data.results || res.data || [];
+        
+        const filterSelect = document.getElementById('catCategoryFilter');
+        const formSelect = document.getElementById('medCategory');
+        
+        const opts = categoriesList.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        filterSelect.innerHTML = '<option value="">All Categories</option>' + opts;
+        formSelect.innerHTML = '<option value="">Select Category...</option>' + opts;
+      } catch (err) {
+        console.error('Failed to load categories', err);
+      }
+    }
+
+    async function loadMedicines() {
+      const search = document.getElementById('catSearch').value;
+      const category = document.getElementById('catCategoryFilter').value;
+      const lowStock = document.getElementById('lowStockOnly').checked;
+
+      let query = '?';
+      if (search) query += `search=${encodeURIComponent(search)}&`;
+      if (category) query += `category=${category}&`;
+      if (lowStock) query += `low_stock=true&`;
+
+      try {
+        const res = await API.get(`/pharmacy/medicines/${query}`);
+        const list = res.data.results || res.data || [];
+        renderTable(list);
+      } catch (err) {
+        Utils.showToast('Failed to load inventory', 'danger');
+      }
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('medicineTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No medicines match current filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(m => {
+        const rowClass = m.is_low_stock ? 'style="background-color: rgba(239, 68, 68, 0.05);"' : '';
+        const badgeClass = m.is_low_stock ? 'badge-danger' : 'badge-success';
+        const expLabel = m.is_expired ? '<span class="text-danger font-semibold">EXPIRED</span>' : (m.expiry_date || '—');
+
+        return `
+          <tr ${rowClass}>
+            <td>
+              <strong>${m.name}</strong><br>
+              <span class="text-xs text-muted">${m.generic_name || 'Generic: —'}</span>
+            </td>
+            <td>${m.category_name || '—'}</td>
+            <td>${m.unit}</td>
+            <td>$${parseFloat(m.unit_price).toFixed(2)}</td>
+            <td>
+              <span class="badge ${badgeClass}">${m.stock_quantity}</span>
+            </td>
+            <td>${m.reorder_level}</td>
+            <td>${expLabel}</td>
+            <td>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary btn-sm" onclick="quickRestock(${m.id}, '${m.name}')">Restock</button>
+                <button class="btn btn-secondary btn-sm" onclick="openEditMedicineModal(${JSON.stringify(m).replace(/"/g, '&quot;')})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteMedicine(${m.id})">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(loadMedicines, 350);
+    }
+
+    function clearFilters() {
+      document.getElementById('catSearch').value = '';
+      document.getElementById('catCategoryFilter').value = '';
+      document.getElementById('lowStockOnly').checked = false;
+      loadMedicines();
+    }
+
+    // Modal Handling
+    function openAddMedicineModal() {
+      document.getElementById('medModalTitle').innerText = 'Add New Medicine';
+      document.getElementById('medicineForm').reset();
+      document.getElementById('medId').value = '';
+      document.getElementById('medStock').disabled = false;
+      document.getElementById('medicineModal').classList.add('active');
+    }
+
+    function openEditMedicineModal(m) {
+      document.getElementById('medModalTitle').innerText = 'Edit Medicine';
+      document.getElementById('medId').value = m.id;
+      document.getElementById('medName').value = m.name;
+      document.getElementById('medGeneric').value = m.generic_name || '';
+      document.getElementById('medCategory').value = m.category || '';
+      document.getElementById('medManufacturer').value = m.manufacturer || '';
+      document.getElementById('medUnit').value = m.unit;
+      document.getElementById('medPrice').value = m.unit_price;
+      document.getElementById('medStock').value = m.stock_quantity;
+      document.getElementById('medStock').disabled = true; // prevent manual override here, use Restock button instead
+      document.getElementById('medReorder').value = m.reorder_level;
+      document.getElementById('medExpiry').value = m.expiry_date || '';
+      document.getElementById('medicineModal').classList.add('active');
+    }
+
+    function closeMedicineModal() {
+      document.getElementById('medicineModal').classList.remove('active');
+    }
+
+    async function saveMedicine(e) {
+      e.preventDefault();
+      const id = document.getElementById('medId').value;
+      const payload = {
+        name: document.getElementById('medName').value,
+        generic_name: document.getElementById('medGeneric').value,
+        category: document.getElementById('medCategory').value || null,
+        manufacturer: document.getElementById('medManufacturer').value,
+        unit: document.getElementById('medUnit').value,
+        unit_price: parseFloat(document.getElementById('medPrice').value),
+        stock_quantity: parseInt(document.getElementById('medStock').value),
+        reorder_level: parseInt(document.getElementById('medReorder').value),
+        expiry_date: document.getElementById('medExpiry').value || null,
+      };
+
+      try {
+        if (id) {
+          delete payload.stock_quantity; // do not patch stock_quantity directly if disabled
+          await API.patch(`/pharmacy/medicines/${id}/`, payload);
+          Utils.showToast('Medicine details updated', 'success');
+        } else {
+          await API.post('/pharmacy/medicines/', payload);
+          Utils.showToast('New medicine cataloged', 'success');
+        }
+        closeMedicineModal();
+        loadMedicines();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to save medicine', 'danger');
+      }
+    }
+
+    async function deleteMedicine(id) {
+      if (!confirm('Are you sure you want to remove this medicine from catalog?')) return;
+      try {
+        await API.delete(`/pharmacy/medicines/${id}/`);
+        Utils.showToast('Medicine removed from catalog', 'success');
+        loadMedicines();
+      } catch (err) {
+        Utils.showToast('Failed to remove medicine', 'danger');
+      }
+    }
+
+    async function quickRestock(medicineId, medicineName) {
+      const qtyStr = prompt(`Enter restock quantity for ${medicineName}:`);
+      if (qtyStr === null) return;
+      const quantity = parseInt(qtyStr);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Please enter a valid positive quantity.');
+        return;
+      }
+
+      try {
+        const res = await API.post(`/pharmacy/medicines/${medicineId}/restock/`, { quantity });
+        Utils.showToast(res.message || 'Restocked successfully', 'success');
+        loadMedicines();
+      } catch (err) {
+        Utils.showToast(err.message || 'Restock failed', 'danger');
+      }
+    }
+
+    // Categories Modal
+    function openCategoryModal() {
+      renderCategoryList();
+      document.getElementById('categoryModal').classList.add('active');
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('categoryModal').classList.remove('active');
+    }
+
+    function renderCategoryList() {
+      const tbody = document.getElementById('categoryTableBody');
+      if (categoriesList.length === 0) {
+        tbody.innerHTML = `<tr><td class="text-center text-muted">No categories created yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = categoriesList.map(c => `
+        <tr>
+          <td class="font-bold">${c.name}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">Delete</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    async function addCategory(e) {
+      e.preventDefault();
+      const name = document.getElementById('newCatName').value;
+      try {
+        await API.post('/pharmacy/categories/', { name });
+        document.getElementById('newCatName').value = '';
+        Utils.showToast('Category added', 'success');
+        await loadCategories();
+        renderCategoryList();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to create category', 'danger');
+      }
+    }
+
+    async function deleteCategory(id) {
+      if (!confirm('Delete this category?')) return;
+      try {
+        await API.delete(`/pharmacy/categories/${id}/`);
+        Utils.showToast('Category deleted', 'success');
+        await loadCategories();
+        renderCategoryList();
+      } catch (err) {
+        Utils.showToast('Failed to delete category', 'danger');
+      }
+    }
+
+    // Startup
+    (async () => {
+      await loadCategories();
+      await loadMedicines();
+    })();
+  </script>
+</body>
+</html>

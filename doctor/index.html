@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/patient.css">
+    <title>Doctor Dashboard</title>
+    <style>
+        .dashbord-tables{
+            animation: transitionIn-Y-over 0.5s;
+        }
+        .filter-container{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td colspan="4">
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">Doctor Dashboard</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <div style="background-color: #D8EBFA; border-radius: 8px; padding: 25px; margin: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <h1 style="margin: 0; color: #1969AA; font-size: 28px;" id="welcome-name">Welcome!</h1>
+                                <p style="margin: 10px 0 0 0; color: #555; font-size: 15px;">
+                                    Track your upcoming sessions, review booked appointments, and manage patient consults.<br>
+                                    Your specialty field: <span id="welcome-specialty" style="font-weight: 600;">-</span>
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <table class="dashbord-tables" border="0" style="width: 95%;">
+                <tr>
+                    <td width="50%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">My Scheduled Sessions</div>
+                            <h2 id="stats-sessions" style="font-size: 36px; margin: 10px 0; color: #1b62b3;">0</h2>
+                        </div>
+                    </td>
+                    <td width="50%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">Upcoming Booked Patients</div>
+                            <h2 id="stats-bookings" style="font-size: 36px; margin: 10px 0; color: #222;">0</h2>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <p style="font-size: 18px; font-weight: 600; padding-left: 12px; margin-bottom: 10px;">My Upcoming Sessions (Next 7 days)</p>
+                        <div class="abc" style="height: 250px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff;">
+                            <table width="100%" class="sub-table" border="0" id="sessions-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-headin">Session Title</th>
+                                        <th class="table-headin">Scheduled Date & Time</th>
+                                        <th class="table-headin">Booked Patients</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            </center>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        // Init navigation
+        initNavigation('dashboard');
+
+        async function loadDashboard() {
+            try {
+                const res = await ApiService.dashboard.getDoctorStats();
+                const data = res.data;
+
+                // Welcome message
+                document.getElementById('welcome-name').textContent = `Welcome, Dr. ${data.doctor_name}!`;
+                document.getElementById('welcome-specialty').textContent = data.specialty || 'General Practice';
+
+                // Set Counts
+                document.getElementById('stats-sessions').textContent = data.total_sessions || 0;
+
+                // Load sessions list
+                const sessionBody = document.querySelector('#sessions-table tbody');
+                sessionBody.innerHTML = '';
+                
+                let totalBookings = 0;
+
+                if (data.upcoming_sessions && data.upcoming_sessions.length > 0) {
+                    data.upcoming_sessions.forEach(sess => {
+                        totalBookings += sess.booked_count;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 12px; font-weight: 600;">${sess.title}</td>
+                            <td style="text-align: center; padding: 12px;">${sess.schedule_date} @ ${sess.schedule_time}</td>
+                            <td style="text-align: center; padding: 12px; font-weight:600;">${sess.booked_count} / ${sess.max_patients}</td>
+                        `;
+                        sessionBody.appendChild(tr);
+                    });
+                } else {
+                    sessionBody.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 40px; color: #999;">
+                                No sessions scheduled.
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                document.getElementById('stats-bookings').textContent = totalBookings;
+
+            } catch (err) {
+                console.error("Dashboard error:", err);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

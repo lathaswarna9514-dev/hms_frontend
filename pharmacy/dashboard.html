@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy Dashboard - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- Pharmacy Banner Card -->
+        <div class="welcome-banner pharmacy-banner" style="background-image: url('../img/pharmacy_banner_1.png');">
+          <div class="welcome-banner-content">
+            <span class="welcome-banner-tag">Dispensation &amp; Inventory Console</span>
+            <h2 class="welcome-banner-title" id="pharmaWelcome" style="font-size:2rem;">Welcome, Pharmacist</h2>
+            <p class="welcome-banner-desc" id="pharmaMeta" style="opacity:0.85;">Loading pharmacy console...</p>
+            <h4 class="welcome-banner-title" style="font-size:1.2rem; margin-top:0.5rem; font-weight:600; opacity:0.9;">Pharmacy Desk &amp; Inventory Control</h4>
+            <p class="welcome-banner-desc">Dispense patient prescriptions, monitor inventory stock levels, handle drug reordering, and track daily transaction revenues.</p>
+          </div>
+
+          <!-- Stats Grid inside Banner -->
+          <div class="welcome-banner-stats">
+            <div class="stat-card">
+              <div class="stat-title">Total Medicines</div>
+              <div class="stat-value" id="statMedicines">0</div>
+              <div class="text-xs text-primary mt-2 font-semibold">Active catalog items</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Low Stock Alerts</div>
+              <div class="stat-value" id="statLowStock">0</div>
+              <div class="text-xs text-danger mt-2 font-semibold">Needs immediate restock</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Dispenses Today</div>
+              <div class="stat-value" id="statTodayDispensed">0</div>
+              <div class="text-xs text-success mt-2 font-semibold">Orders processed today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Total Revenue Today</div>
+              <div class="stat-value" id="statRevenue">$0.00</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Dispensed billing</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <!-- Low Stock Alerts List -->
+          <div class="card">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-bold">Low Stock Warning</h4>
+              <a href="../pharmacy/products.html?filter=low_stock" class="btn btn-secondary btn-sm">Manage Stock</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Lvl</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="lowStockList">
+                  <tr><td colspan="4" class="text-center text-muted py-4">Checking inventory status...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Orders List -->
+          <div class="card">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-bold">Recent Dispenses</h4>
+              <a href="../pharmacy/orders.html" class="btn btn-secondary btn-sm">All Orders</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Dispense #</th>
+                    <th>Patient</th>
+                    <th>Medicine</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="recentOrdersList">
+                  <tr><td colspan="4" class="text-center text-muted py-4">Loading order records...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['pharmacy']);
+
+    const pharmaMenu = [
+      { label: 'Dashboard', path: '../pharmacy/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Medicine Catalog', path: '../pharmacy/products.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>' },
+      { label: 'Dispense Logs', path: '../pharmacy/orders.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../pharmacy/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(pharmaMenu, '../pharmacy/dashboard.html', 'Pharmacy Unit', 'Department Console');
+    Utils.renderHeader('Dashboard');
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('pharmaWelcome').innerText = `Welcome, ${user.name}`;
+      document.getElementById('pharmaMeta').innerText = `${user.hospital_name || 'Hospital'} — Pharmacy & Inventory Control`;
+    }
+
+    async function loadDashboard() {
+      try {
+        const [medicinesRes, ordersRes] = await Promise.all([
+          API.get('/pharmacy/medicines/'),
+          API.get('/pharmacy/orders/')
+        ]);
+
+        const allMedicines = medicinesRes.data.results || medicinesRes.data || [];
+        const allOrders = ordersRes.data.results || ordersRes.data || [];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Stats calculation
+        const lowStockItems = allMedicines.filter(m => m.is_low_stock);
+        const todayOrders = allOrders.filter(o => o.created_at.startsWith(todayStr));
+        const todayRevenue = todayOrders.reduce((sum, o) => sum + parseFloat(o.total_price || 0), 0);
+
+        document.getElementById('statMedicines').innerText = allMedicines.length;
+        document.getElementById('statLowStock').innerText = lowStockItems.length;
+        document.getElementById('statTodayDispensed').innerText = todayOrders.length;
+        document.getElementById('statRevenue').innerText = `$${todayRevenue.toFixed(2)}`;
+
+        // Low stock list rendering
+        const lowStockTbody = document.getElementById('lowStockList');
+        if (lowStockItems.length === 0) {
+          lowStockTbody.innerHTML = `<tr><td colspan="4" class="text-center text-success py-4">All medicine stock levels are good!</td></tr>`;
+        } else {
+          lowStockTbody.innerHTML = lowStockItems.slice(0, 5).map(m => `
+            <tr>
+              <td>
+                <strong>${m.name}</strong><br>
+                <span class="text-xs text-muted">${m.generic_name || '—'}</span>
+              </td>
+              <td><span class="text-danger font-semibold">${m.stock_quantity}</span> / <span class="text-muted text-xs">${m.unit}</span></td>
+              <td>${m.reorder_level}</td>
+              <td>
+                <button class="btn btn-secondary btn-sm" onclick="quickRestock(${m.id}, '${m.name}')">Restock</button>
+              </td>
+            </tr>`).join('');
+        }
+
+        // Recent orders list rendering
+        const recentOrdersTbody = document.getElementById('recentOrdersList');
+        if (allOrders.length === 0) {
+          recentOrdersTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No dispense orders registered.</td></tr>`;
+        } else {
+          recentOrdersTbody.innerHTML = allOrders.slice(0, 5).map(o => `
+            <tr>
+              <td><span class="font-mono text-sm">#${o.id}</span></td>
+              <td><strong>${o.patient_name}</strong></td>
+              <td>${o.medicine_name} × ${o.quantity}</td>
+              <td><span class="font-bold text-success">$${parseFloat(o.total_price).toFixed(2)}</span></td>
+            </tr>`).join('');
+        }
+      } catch (err) {
+        Utils.showToast('Failed to load dashboard data', 'danger');
+      }
+    }
+
+    async function quickRestock(medicineId, medicineName) {
+      const qtyStr = prompt(`Enter restock quantity for ${medicineName}:`);
+      if (qtyStr === null) return;
+      const quantity = parseInt(qtyStr);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Please enter a valid positive quantity.');
+        return;
+      }
+
+      try {
+        const res = await API.post(`/pharmacy/medicines/${medicineId}/restock/`, { quantity });
+        Utils.showToast(res.message || 'Restocked successfully', 'success');
+        loadDashboard();
+      } catch (err) {
+        Utils.showToast(err.message || 'Restock failed', 'danger');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

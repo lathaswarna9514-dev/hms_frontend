@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inpatients - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+          <div>
+            <h2 class="font-bold">Inpatient List</h2>
+            <p class="text-muted mt-1">All currently admitted patients in your ward.</p>
+          </div>
+          <!-- Filter tabs -->
+          <div class="flex gap-2">
+            <button class="btn btn-secondary btn-sm tab-btn active" id="tabAdmitted" onclick="filterStatus('admitted')">Admitted</button>
+            <button class="btn btn-secondary btn-sm tab-btn" id="tabDischarged" onclick="filterStatus('discharged')">Discharged</button>
+            <button class="btn btn-secondary btn-sm tab-btn" id="tabAll" onclick="filterStatus('')">All</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Admission #</th>
+                  <th>Patient</th>
+                  <th>Bed / Room</th>
+                  <th>Attending Doctor</th>
+                  <th>Admitted</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admissionsBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Loading inpatients...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['nurse', 'hospital-admin', 'doctor']);
+
+    const nurseMenu = [
+      { label: 'Ward Dashboard', path: '../nurse/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Inpatients', path: '../nurse/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'Ward Map', path: '../nurse/ward.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm0 0V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M9 3v6m6-6v6"/></svg>' },
+      { label: 'Record Vitals', path: '../nurse/vitals.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' },
+      { label: 'My Profile', path: '../nurse/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(nurseMenu, '../nurse/patients.html', 'Nursing Console', 'Ward Portal');
+    Utils.renderHeader('Inpatients');
+
+    let currentFilter = 'admitted';
+
+    function filterStatus(status) {
+      currentFilter = status;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (status === 'admitted') document.getElementById('tabAdmitted').classList.add('active');
+      else if (status === 'discharged') document.getElementById('tabDischarged').classList.add('active');
+      else document.getElementById('tabAll').classList.add('active');
+      loadAdmissions();
+    }
+
+    async function loadAdmissions() {
+      try {
+        const query = currentFilter ? `?status=${currentFilter}` : '';
+        const res = await API.get(`/ipd/admissions/${query}`);
+        const admissions = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        renderTable(admissions);
+      } catch (err) {
+        Utils.showToast('Failed to load inpatients', 'danger');
+      }
+    }
+
+    function renderTable(admissions) {
+      const tbody = document.getElementById('admissionsBody');
+      if (admissions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No inpatient records found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = admissions.map(a => {
+        const statusBadge = a.status === 'admitted' ? 'badge-success' :
+                            a.status === 'discharged' ? 'badge-secondary' : 'badge-warning';
+        return `
+          <tr>
+            <td><span class="font-mono text-sm">#${a.id}</span></td>
+            <td>
+              <strong>${a.patient_name}</strong><br>
+              <span class="text-xs text-muted">${a.diagnosis || '—'}</span>
+            </td>
+            <td>
+              <span class="font-semibold">${a.room_label || '—'}</span>
+              <span class="text-muted"> / </span>
+              <span class="text-primary">${a.bed_label || '—'}</span>
+            </td>
+            <td>${a.doctor_name || '—'}</td>
+            <td><span class="text-xs">${a.admission_date ? a.admission_date.split('T')[0] : '—'}</span></td>
+            <td><span class="badge ${statusBadge}">${a.status}</span></td>
+            <td>
+              <div class="flex gap-2">
+                <a href="../nurse/vitals.html?admission=${a.id}" class="btn btn-primary btn-sm">Vitals</a>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    loadAdmissions();
+  </script>
+</body>
+</html>

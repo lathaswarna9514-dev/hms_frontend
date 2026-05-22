@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+        <div style="width: 100%; max-width: 640px; margin: 0 auto;">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">My Clinical Profile</h2>
+          <p class="text-muted mt-1">View and update your doctor profile and contact details.</p>
+        </div>
+
+        <div class="card">
+          <form id="profileForm" onsubmit="handleSave(event)">
+
+            <!-- Profile Header -->
+            <div class="flex items-center mb-6" style="gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+              <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: white; flex-shrink: 0;" id="docAvatar">D</div>
+              <div>
+                <div class="font-bold text-lg" id="docNameHeader">Loading...</div>
+                <div class="text-sm text-muted" id="docEmailHeader"></div>
+                <span class="badge badge-success mt-2">Doctor</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="docName">Full Name</label>
+              <input type="text" id="docName" class="form-input" placeholder="Dr. Full Name" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="docEmail">Email Address</label>
+              <input type="email" id="docEmail" class="form-input" placeholder="doctor@hospital.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="docNic">NIC / ID Number</label>
+              <input type="text" id="docNic" class="form-input" placeholder="e.g. 987654321V">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="docPhone">Telephone</label>
+              <input type="tel" id="docPhone" class="form-input" placeholder="e.g. +91 98765 12345">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="docSpecialty">Medical Specialty</label>
+              <select id="docSpecialty" class="form-input"></select>
+            </div>
+
+            <div class="flex justify-end mt-4" style="gap: .75rem;">
+              <button type="button" class="btn btn-secondary" onclick="loadProfile()">Reset</button>
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+            </div>
+          </form>
+        </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['doctor']);
+
+    const doctorMenu = [
+      { label: 'My Dashboard', path: '../doctor/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'My Schedules', path: '../doctor/schedules.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'My Patients', path: '../doctor/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'My Leaves', path: '../doctor/leaves.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' },
+      { label: 'Prescriptions', path: '../doctor/prescription.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' },
+      { label: 'My Profile', path: '../doctor/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(doctorMenu, '../doctor/profile.html', 'Doctor Console', 'Clinical Portal');
+    Utils.renderHeader('My Profile');
+
+    let doctorId = null;
+    const user = Auth.getUser();
+
+    async function init() {
+      try {
+        // Load specialties
+        const specRes = await API.get('/doctors/specialties/');
+        const specialties = specRes.data || [];
+        const select = document.getElementById('docSpecialty');
+        select.innerHTML = '<option value="">Select Specialty...</option>' +
+          specialties.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+        await loadProfile();
+      } catch (err) {
+        Utils.showToast('Failed to initialize profile', 'danger');
+      }
+    }
+
+    async function loadProfile() {
+      try {
+        // Find doctor profile by user email
+        const res = await API.get(`/doctors/?search=${encodeURIComponent(user.email)}`);
+        const doctors = res.data || [];
+        if (doctors.length === 0) {
+          Utils.showToast('Doctor profile not yet created. Contact your hospital admin.', 'warning');
+          return;
+        }
+        const doc = doctors[0];
+        doctorId = doc.id;
+
+        document.getElementById('docName').value = doc.name || '';
+        document.getElementById('docEmail').value = doc.email || '';
+        document.getElementById('docNic').value = doc.nic || '';
+        document.getElementById('docPhone').value = doc.telephone || '';
+        document.getElementById('docSpecialty').value = doc.specialty || '';
+
+        document.getElementById('docNameHeader').innerText = `Dr. ${doc.name}`;
+        document.getElementById('docEmailHeader').innerText = doc.email;
+        const initials = doc.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        document.getElementById('docAvatar').innerText = initials || 'D';
+      } catch (err) {
+        Utils.showToast('Failed to load doctor profile', 'danger');
+      }
+    }
+
+    async function handleSave(e) {
+      e.preventDefault();
+      if (!doctorId) {
+        Utils.showToast('No doctor profile found to update', 'warning');
+        return;
+      }
+      const payload = {
+        name: document.getElementById('docName').value,
+        email: document.getElementById('docEmail').value,
+        nic: document.getElementById('docNic').value,
+        telephone: document.getElementById('docPhone').value,
+        specialty: document.getElementById('docSpecialty').value || null
+      };
+      try {
+        await API.put(`/doctors/${doctorId}/`, payload);
+        Utils.showToast('Profile updated successfully', 'success');
+        loadProfile();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to save profile', 'danger');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

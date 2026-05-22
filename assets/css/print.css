@@ -1,0 +1,112 @@
+/* ============================================================
+   eDoc HMS — Print Stylesheet
+   Designed for printable invoices, prescription slips, discharge summaries
+   ============================================================ */
+
+@media print {
+  /* Reset page rules */
+  body, html {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide screen elements */
+  .sidebar,
+  .header,
+  .btn,
+  .no-print,
+  .sidebar-overlay,
+  .modal-backdrop,
+  .toast-container,
+  footer {
+    display: none !important;
+  }
+
+  /* Main layout expansion */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .content-wrapper {
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Card and table resets */
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .table-responsive {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  .table th {
+    background: #f1f5f9 !important;
+    color: #000 !important;
+    border-bottom: 2px solid #000 !important;
+  }
+
+  .table td {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  /* Specific Print layout header */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #0ea5e9;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .print-title {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0c1a2e;
+  }
+
+  .print-meta {
+    text-align: right;
+    font-size: 10pt;
+    color: #475569;
+  }
+
+  /* Print specific utilities */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Prevent elements from breaking across pages */
+  tr, img, .print-card {
+    page-break-inside: avoid;
+  }
+
+  /* Badge conversions for black and white printing */
+  .badge {
+    border: 1px solid #cbd5e1 !important;
+    background: transparent !important;
+    color: #000 !important;
+    padding: 0.125rem 0.5rem !important;
+  }
+}
+
+/* Screen hidden helper for print elements */
+@media screen {
+  .print-header {
+    display: none;
+  }
+}

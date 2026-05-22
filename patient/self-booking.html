@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPD Self Booking - eDoc HMS</title>
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+    <style>
+      :root {
+        --bms-green: #10b981;
+        --bms-green-bg: #e6fbf4;
+        --bms-yellow: #f59e0b;
+        --bms-yellow-bg: #fef8ec;
+        --bms-red: #ef4444;
+        --bms-red-bg: #fef2f2;
+      }
+
+      /* Step Wizard Styling */
+      .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2.5rem;
+        background: var(--card-background);
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border);
+      }
+
+      .wizard-step {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 14px;
+        position: relative;
+      }
+
+      .wizard-step.active {
+        color: var(--primary);
+      }
+
+      .wizard-step.completed {
+        color: var(--bms-green);
+      }
+
+      .wizard-step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        transition: all 0.3s;
+      }
+
+      .wizard-step.active .wizard-step-number {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+      }
+
+      .wizard-step.completed .wizard-step-number {
+        border-color: var(--bms-green);
+        background: var(--bms-green);
+        color: white;
+      }
+
+      /* Multi-step panels */
+      .step-panel {
+        display: none;
+        animation: fadeIn 0.4s ease forwards;
+      }
+
+      .step-panel.active {
+        display: block;
+      }
+
+      /* Hospital Grid Cards */
+      .hospital-grid, .doctor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+      }
+
+      .hospital-card, .doctor-card {
+        background: var(--card-background);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .hospital-card:hover, .doctor-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+      }
+
+      .hospital-header, .doctor-header {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .hospital-logo-placeholder, .doctor-avatar-placeholder {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.25);
+      }
+
+      .doctor-avatar-placeholder {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        border-radius: 50%;
+      }
+
+      .hospital-details, .doctor-details {
+        flex: 1;
+      }
+
+      .hospital-title, .doctor-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--foreground);
+        margin: 0 0 0.25rem 0;
+      }
+
+      .specialty-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      .info-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 0.5rem;
+      }
+
+      .info-row svg {
+        color: var(--primary);
+        flex-shrink: 0;
+      }
+
+      /* Visual Slot Selector (BookMyShow Style) */
+      .bms-container {
+        background: var(--card-background);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        margin-top: 1.5rem;
+      }
+
+      /* Date Picker Horizontal Slider */
+      .bms-dates-slider {
+        display: flex;
+        gap: 0.85rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+        scroll-behavior: smooth;
+      }
+
+      .bms-dates-slider::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      .bms-dates-slider::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
+
+      .date-pill {
+        flex: 0 0 75px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.85rem 0.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.25s;
+        background: var(--background);
+      }
+
+      .date-pill:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+      }
+
+      .date-pill.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .date-pill-day {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.75;
+      }
+
+      .date-pill.active .date-pill-day {
+        opacity: 0.9;
+      }
+
+      .date-pill-num {
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin: 0.25rem 0;
+      }
+
+      .date-pill-indicator {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+
+      .date-pill.has-sessions .date-pill-indicator {
+        background: var(--bms-green);
+      }
+
+      .date-pill.active .date-pill-indicator {
+        background: white;
+      }
+
+      /* Time Slots Visual Grid */
+      .bms-slots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+      }
+
+      .bms-slot-pill {
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.25s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .bms-slot-pill.available {
+        border-color: var(--bms-green);
+        background: var(--bms-green-bg);
+      }
+
+      .bms-slot-pill.available:hover {
+        background: var(--bms-green);
+        color: white;
+        transform: scale(1.03);
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+      }
+
+      .bms-slot-pill.limited {
+        border-color: var(--bms-yellow);
+        background: var(--bms-yellow-bg);
+      }
+
+      .bms-slot-pill.limited:hover {
+        background: var(--bms-yellow);
+        color: white;
+        transform: scale(1.03);
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+      }
+
+      .bms-slot-pill.full {
+        border-color: var(--bms-red);
+        background: var(--bms-red-bg);
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .bms-slot-pill.full::after {
+        content: 'SOLD OUT';
+        position: absolute;
+        font-size: 9px;
+        font-weight: 800;
+        background: var(--bms-red);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        top: 4px;
+        right: 4px;
+      }
+
+      .bms-slot-time {
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .bms-slot-status {
+        font-size: 11px;
+        margin-top: 0.25rem;
+        font-weight: 600;
+      }
+
+      .bms-slot-pill.available .bms-slot-status { color: var(--bms-green); }
+      .bms-slot-pill.limited .bms-slot-status { color: var(--bms-yellow); }
+      .bms-slot-pill.full .bms-slot-status { color: var(--bms-red); }
+
+      .bms-slot-pill.available:hover .bms-slot-status,
+      .bms-slot-pill.limited:hover .bms-slot-status {
+        color: white;
+      }
+
+      /* Premium Receipt/Ticket Modal Styling */
+      .ticket-modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        padding: 2rem 1.5rem;
+        overflow-y: auto;
+        box-sizing: border-box;
+      }
+
+      .ticket-modal.active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      .ticket-container, .modal-content {
+        margin: auto 0;
+        flex-shrink: 0;
+      }
+
+      .ticket-container {
+        width: 100%;
+        max-width: 440px;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      /* High Fidelity Ticket Cutout design */
+      .ticket-header-side {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        padding: 2rem 1.75rem;
+        text-align: center;
+        position: relative;
+      }
+
+      .ticket-cutout-divider {
+        height: 20px;
+        background: white;
+        position: relative;
+      }
+
+      .ticket-cutout-divider::before, .ticket-cutout-divider::after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(15, 23, 42, 0.6); /* Matches modal backdrop */
+      }
+
+      .ticket-cutout-divider::before { left: -10px; }
+      .ticket-cutout-divider::after { right: -10px; }
+
+      .ticket-dashed-line {
+        position: absolute;
+        top: 10px;
+        left: 15px;
+        right: 15px;
+        border-bottom: 2px dashed #cbd5e1;
+      }
+
+      .ticket-body-side {
+        padding: 2rem 1.75rem;
+        background: white;
+        color: #1e293b;
+        position: relative;
+      }
+
+      .ticket-hospital {
+        font-weight: 800;
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+      }
+
+      .ticket-receipt-title {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--primary);
+        background: rgba(102, 126, 234, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 0.5rem;
+      }
+
+      .ticket-number-badge {
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: var(--primary);
+        line-height: 1;
+        letter-spacing: -0.05em;
+        margin: 1rem 0;
+      }
+
+      .ticket-number-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .ticket-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem 1rem;
+        margin: 1.5rem 0;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1.5rem 0;
+      }
+
+      .ticket-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ticket-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+      }
+
+      .ticket-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      /* Circular PAID stamp style */
+      .paid-stamp {
+        border: 4px double #10b981;
+        color: #10b981;
+        font-size: 18px;
+        font-weight: 900;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        border-radius: 8px;
+        display: inline-block;
+        transform: rotate(-12deg);
+        position: absolute;
+        bottom: 2.5rem;
+        right: 2rem;
+        opacity: 0.85;
+      }
+
+      .barcode-mock {
+        height: 48px;
+        background: repeating-linear-gradient(
+          90deg,
+          #0f172a,
+          #0f172a 2px,
+          transparent 2px,
+          transparent 6px,
+          #0f172a 6px,
+          #0f172a 10px,
+          transparent 10px,
+          transparent 12px
+        );
+        width: 80%;
+        margin: 1.5rem auto 0 auto;
+        opacity: 0.7;
+      }
+
+      .ticket-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding: 0 1.75rem 2rem 1.75rem;
+        background: white;
+      }
+
+      /* Print Override Styling */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .ticket-modal, .ticket-modal * {
+          visibility: visible;
+        }
+        .ticket-modal {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: auto;
+          background: white;
+          backdrop-filter: none;
+          padding: 0;
+        }
+        .ticket-container {
+          box-shadow: none;
+          border: none;
+          max-width: 100%;
+          width: 100%;
+        }
+        .ticket-actions {
+          display: none !important;
+        }
+        .ticket-cutout-divider::before, .ticket-cutout-divider::after {
+          display: none;
+        }
+      }
+
+      @keyframes scaleUp {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Mobile & Responsive Adaptations */
+      @media (max-width: 768px) {
+        .wizard-steps {
+          padding: 0.75rem 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .wizard-step-number {
+          width: 24px;
+          height: 24px;
+          font-size: 11px;
+        }
+        .wizard-step span:not(.wizard-step-number) {
+          display: none; /* Hide labels on tablet/mobile step navigation */
+        }
+        .wizard-steps {
+          justify-content: space-around;
+        }
+
+        .hospital-grid, .doctor-grid {
+          grid-template-columns: 1fr; /* Stack cards vertically */
+          gap: 1rem;
+        }
+
+        .search-bar-row {
+          flex-direction: column;
+          align-items: stretch !important;
+          gap: 0.75rem;
+        }
+        .search-bar-row button {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .title-row {
+          flex-direction: column;
+          align-items: flex-start !important;
+          gap: 1rem;
+        }
+        .title-row button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .bms-container {
+          padding: 1rem;
+        }
+        .bms-dates-slider {
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+        .date-pill {
+          flex: 0 0 65px;
+          padding: 0.65rem 0.35rem;
+        }
+        .date-pill-num {
+          font-size: 1.15rem;
+        }
+        .bms-slots-grid {
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 0.75rem;
+        }
+        .bms-slot-pill {
+          padding: 0.75rem 0.5rem;
+        }
+        .bms-slot-time {
+          font-size: 0.95rem;
+        }
+        .bms-slot-status {
+          font-size: 10px;
+        }
+
+        /* Modals and Ticket styling */
+        .ticket-modal {
+          padding: 0.75rem;
+        }
+        .ticket-container {
+          border-radius: 16px;
+        }
+        .ticket-header-side, .ticket-body-side {
+          padding: 1.5rem 1.25rem !important;
+        }
+        .ticket-number-badge {
+          font-size: 2.75rem !important;
+          margin: 0.5rem 0;
+        }
+        .ticket-grid {
+          grid-template-columns: 1fr !important;
+          gap: 0.85rem !important;
+          padding: 1rem 0 !important;
+          margin: 1rem 0;
+        }
+        .paid-stamp {
+          position: static;
+          display: block;
+          text-align: center;
+          margin: 1rem auto 0 auto;
+          width: fit-content;
+          transform: rotate(-3deg);
+        }
+        .barcode-mock {
+          width: 90%;
+        }
+        .ticket-actions {
+          padding: 0 1.25rem 1.5rem 1.25rem;
+        }
+      }
+    </style>
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open')"></div>
+    <main class="main-content">
+      <div class="content-wrapper">
+        
+        <div class="title-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+          <div>
+            <h1 style="font-size:1.25rem; font-weight:800; margin:0;">OPD Appointment Booking</h1>
+            <p style="color:var(--muted); font-size:14px; margin-top:0.25rem;">Self-service OPD booking, slot selection, and receipt generation.</p>
+          </div>
+          <button id="btn-restart" class="btn btn-secondary btn-sm" style="display:none;" onclick="restartBooking()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Restart
+          </button>
+        </div>
+
+        <!-- Wizard Navigation Steps -->
+        <div class="wizard-steps">
+          <div class="wizard-step active" id="step-nav-1">
+            <span class="wizard-step-number">1</span>
+            <span>Choose Hospital</span>
+          </div>
+          <div class="wizard-step" id="step-nav-2">
+            <span class="wizard-step-number">2</span>
+            <span>Select Doctor</span>
+          </div>
+          <div class="wizard-step" id="step-nav-3">
+            <span class="wizard-step-number">3</span>
+            <span>Visual Slots Grid</span>
+          </div>
+        </div>
+
+        <!-- STEP 1 PANEL: HOSPITAL SELECTOR -->
+        <div class="step-panel active" id="panel-step-1">
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h3 style="margin:0 0 1rem 0;">Explore Partner Hospitals</h3>
+            <input type="search" id="hospitalSearch" class="form-control" placeholder="Search hospital by name, address or email..." oninput="filterHospitals(this.value)" style="padding:10px 15px; border-radius:8px;">
+          </div>
+          <div class="hospital-grid" id="hospitals-list-container">
+            <div class="text-center text-muted py-5" style="grid-column: 1/-1;">Loading active hospitals...</div>
+          </div>
+        </div>
+
+        <!-- STEP 2 PANEL: DOCTOR SELECTOR -->
+        <div class="step-panel" id="panel-step-2">
+          <div class="search-bar-row card" style="margin-bottom:1.5rem; display:flex; gap:1rem; align-items:center;">
+            <button class="btn btn-secondary btn-sm" onclick="goToStep(1)" style="display:flex; align-items:center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Change Hospital
+            </button>
+            <input type="search" id="doctorSearch" class="form-control" placeholder="Search doctor by name or specialty..." oninput="filterDoctors(this.value)" style="padding:10px 15px; border-radius:8px; flex:1;">
+          </div>
+          <div class="doctor-grid" id="doctors-list-container">
+            <div class="text-center text-muted py-5" style="grid-column: 1/-1;">Loading doctors...</div>
+          </div>
+        </div>
+
+        <!-- STEP 3 PANEL: SLOT PICKER (BOOK MY SHOW STYLE) -->
+        <div class="step-panel" id="panel-step-3">
+          <div class="search-bar-row card" style="margin-bottom:1.5rem; display:flex; gap:1rem; align-items:center;">
+            <button class="btn btn-secondary btn-sm" onclick="goToStep(2)" style="display:flex; align-items:center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Change Doctor
+            </button>
+            <div id="active-booking-meta" style="font-weight:700; color:var(--foreground);">Booking details</div>
+          </div>
+
+          <div class="bms-container">
+            <h4 class="font-bold mb-3">1. Select Date (One Future Week)</h4>
+            <!-- Date selection slider -->
+            <div class="bms-dates-slider" id="dates-slider-container"></div>
+
+            <h4 class="font-bold mb-3" style="margin-top: 1.5rem;">2. Select Available Session Time Slot</h4>
+            <!-- Time slots grid -->
+            <div class="bms-slots-grid" id="slots-grid-container">
+              <div class="text-center text-muted py-4" style="grid-column: 1/-1;">Select a date to view available time slots</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- BOOKING CONFIRMATION MODAL -->
+  <div id="bookingConfirmModal" class="ticket-modal">
+    <div class="modal-content" style="max-width:480px; padding:2rem; border-radius:16px;">
+      <h2 class="font-bold mb-2">Confirm OPD Session</h2>
+      <p style="color:var(--muted); font-size:14px; margin-bottom:1.5rem;">Please review the consultation details below before booking.</p>
+      
+      <div style="border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:1rem 0; display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Hospital:</span><span id="conf-hospital" style="font-weight:700; text-align:right;">-</span></div>
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Doctor:</span><span id="conf-doctor" style="font-weight:700; color:var(--primary); text-align:right;">-</span></div>
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Specialty:</span><span id="conf-specialty" style="font-weight:700; text-align:right;">-</span></div>
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Date:</span><span id="conf-date" style="font-weight:700; text-align:right;">-</span></div>
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Time:</span><span id="conf-time" style="font-weight:700; text-align:right;">-</span></div>
+        <div style="display:flex; justify-content:space-between; gap:1rem;"><span style="color:var(--muted); font-weight:600; flex-shrink:0;">Consultation Fee:</span><span style="font-weight:700; color:#10b981; text-align:right;">₹500.00 (PAID OPD)</span></div>
+      </div>
+
+      <div id="booking-error-msg" style="display:none; color:var(--bms-red); background:var(--bms-red-bg); padding:0.75rem; border-radius:8px; margin-bottom:1rem; font-size:13px; font-weight:600;"></div>
+
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+        <button id="btn-finalize-booking" class="btn btn-primary" onclick="finalizeBooking()">Book & Pay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREMIUM TICKET / RECEIPT MODAL -->
+  <div id="receiptModal" class="ticket-modal">
+    <div class="ticket-container">
+      <div class="ticket-header-side">
+        <h3 style="margin:0; font-weight:800; font-size:1.4rem; letter-spacing:-0.03em;">APPOINTMENT CONFIRMED</h3>
+        <p style="color:rgba(255,255,255,0.7); font-size:12px; margin:0.25rem 0 0 0;">Thank you for booking with eDoc HMS</p>
+        <span class="ticket-receipt-title">OPD CONSULTATION PASS</span>
+      </div>
+      
+      <div class="ticket-cutout-divider">
+        <div class="ticket-dashed-line"></div>
+      </div>
+
+      <div class="ticket-body-side">
+        <div style="text-align:center;">
+          <span class="ticket-number-label">Appointment Sequence Number</span>
+          <div class="ticket-number-badge" id="receipt-appt-number">00</div>
+        </div>
+
+        <div class="ticket-grid">
+          <div class="ticket-item">
+            <span class="ticket-label">Patient Name</span>
+            <span class="ticket-val" id="receipt-patient-name">-</span>
+          </div>
+          <div class="ticket-item">
+            <span class="ticket-label">Attending Doctor</span>
+            <span class="ticket-val" id="receipt-doctor-name">-</span>
+          </div>
+          <div class="ticket-item">
+            <span class="ticket-label">Hospital node</span>
+            <span class="ticket-val" id="receipt-hospital-name">-</span>
+          </div>
+          <div class="ticket-item">
+            <span class="ticket-label">Medical Specialty</span>
+            <span class="ticket-val" id="receipt-specialty">-</span>
+          </div>
+          <div class="ticket-item">
+            <span class="ticket-label">Session Date</span>
+            <span class="ticket-val" id="receipt-date">-</span>
+          </div>
+          <div class="ticket-item">
+            <span class="ticket-label">Session Time</span>
+            <span class="ticket-val" id="receipt-time">-</span>
+          </div>
+          <div class="ticket-item" style="grid-column: 1/-1;">
+            <span class="ticket-label">Hospital Address</span>
+            <span class="ticket-val" id="receipt-hospital-addr" style="font-size:12px; font-weight:600; color:var(--muted);">-</span>
+          </div>
+        </div>
+
+        <!-- Watermark stamp -->
+        <div class="paid-stamp">PAID ₹500</div>
+
+        <!-- Mock barcode -->
+        <div class="barcode-mock"></div>
+        <div style="text-align:center; font-family:monospace; font-size:10px; color:var(--muted); margin-top:4px;">OPD-TKT-992381-EDOC</div>
+      </div>
+
+      <div class="ticket-actions">
+        <button class="btn btn-secondary" style="flex:1;" onclick="closeReceiptModalAndReset()">Close</button>
+        <button class="btn btn-primary" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="window.print()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['patient']);
+
+    const patientMenu = [
+      { label: 'Home', path: '../patient/index.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+      { label: 'Self Booking', path: '../patient/self-booking.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+      { label: 'Scheduled Sessions', path: '../patient/schedule.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'My Bookings', path: '../patient/bookings.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9h12M6 9a6 6 0 0 0-6 6v3h24v-3a6 6 0 0 0-6-6M6 9V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M9 17v4M15 17v4"/></svg>' },
+      { label: 'Medical History', path: '../patient/history.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' },
+      { label: 'My Bills', path: '../patient/billing.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
+      { label: 'My Profile', path: '../patient/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(patientMenu, '../patient/self-booking.html', 'Your Health', 'Patient Portal');
+    Utils.renderHeader('OPD Self Booking');
+
+    // State Variables
+    let currentStep = 1;
+    let allHospitals = [];
+    let selectedHospital = null;
+    let allDoctors = [];
+    let selectedDoctor = null;
+    let doctorSessions = [];
+    let selectedDateStr = null;
+    let selectedSession = null;
+
+    // Load Hospitals initially
+    async function initPage() {
+      const savedStep = localStorage.getItem('self_booking_step');
+      const savedHospital = localStorage.getItem('self_booking_hospital');
+      const savedDoctor = localStorage.getItem('self_booking_doctor');
+
+      if (savedStep && savedHospital) {
+        try {
+          selectedHospital = JSON.parse(savedHospital);
+          localStorage.setItem('edoc_active_hospital_id', selectedHospital.id);
+          
+          if (savedStep === '2') {
+            goToStep(2);
+            await loadDoctors();
+            return;
+          } else if (savedStep === '3' && savedDoctor) {
+            selectedDoctor = JSON.parse(savedDoctor);
+            goToStep(3);
+            
+            const metaEl = document.getElementById('active-booking-meta');
+            const specialtyName = selectedDoctor.specialty_name || (selectedDoctor.specialty ? selectedDoctor.specialty.name : 'General');
+            metaEl.innerHTML = `Attending: <span style="color:var(--primary)">Dr. ${selectedDoctor.name}</span> (${specialtyName}) • Scoped: ${selectedHospital.name}`;
+
+            generateUpcomingWeekDates();
+            await loadDoctorSchedules();
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to restore booking wizard step state", e);
+        }
+      }
+
+      selectedHospital = null;
+      selectedDoctor = null;
+      localStorage.removeItem('edoc_active_hospital_id');
+      localStorage.removeItem('self_booking_step');
+      localStorage.removeItem('self_booking_hospital');
+      localStorage.removeItem('self_booking_doctor');
+      await loadHospitals();
+    }
+
+    // Step navigation control
+    function goToStep(step) {
+      currentStep = step;
+      localStorage.setItem('self_booking_step', step);
+      
+      // Update step nav headers
+      document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active', 'completed'));
+      for(let i = 1; i <= 3; i++) {
+        const stepNav = document.getElementById(`step-nav-${i}`);
+        if(i < step) {
+          stepNav.classList.add('completed');
+        } else if(i === step) {
+          stepNav.classList.add('active');
+        }
+      }
+
+      // Toggle Panels
+      document.querySelectorAll('.step-panel').forEach(panel => panel.classList.remove('active'));
+      document.getElementById(`panel-step-${step}`).classList.add('active');
+
+      // Top restart button toggler
+      document.getElementById('btn-restart').style.display = step > 1 ? 'flex' : 'none';
+      
+      if (step === 1) {
+        localStorage.removeItem('edoc_active_hospital_id');
+        localStorage.removeItem('self_booking_step');
+        localStorage.removeItem('self_booking_hospital');
+        localStorage.removeItem('self_booking_doctor');
+      }
+    }
+
+    function restartBooking() {
+      selectedHospital = null;
+      selectedDoctor = null;
+      selectedSession = null;
+      selectedDateStr = null;
+      localStorage.removeItem('self_booking_step');
+      localStorage.removeItem('self_booking_hospital');
+      localStorage.removeItem('self_booking_doctor');
+      goToStep(1);
+      loadHospitals();
+    }
+
+    // Hospital step execution
+    async function loadHospitals() {
+      const container = document.getElementById('hospitals-list-container');
+      container.innerHTML = '<div class="text-center text-muted py-5" style="grid-column:1/-1;">Loading active hospitals...</div>';
+      try {
+        const res = await API.get('/hospitals/');
+        allHospitals = res.results || (res.data && res.data.results) || res.data || [];
+        renderHospitals(allHospitals);
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-danger py-5" style="grid-column:1/-1;">Failed to load hospitals: ${err.message}</div>`;
+      }
+    }
+
+    function renderHospitals(hospitals) {
+      const container = document.getElementById('hospitals-list-container');
+      container.innerHTML = '';
+      if(hospitals.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5" style="grid-column:1/-1;">No hospitals found matching search.</div>';
+        return;
+      }
+
+      hospitals.forEach(h => {
+        const initials = h.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const card = document.createElement('div');
+        card.className = 'hospital-card';
+        card.onclick = () => selectHospital(h);
+        card.innerHTML = `
+          <div>
+            <div class="hospital-header">
+              <div class="hospital-logo-placeholder">${initials}</div>
+              <div class="hospital-details">
+                <h4 class="hospital-title">${h.name}</h4>
+                <span class="badge badge-success">ACTIVE NODE</span>
+              </div>
+            </div>
+            <div class="info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>${h.address || 'Address N/A'}</span>
+            </div>
+            <div class="info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>${h.phone || 'Phone N/A'}</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" style="width:100%;">Select Hospital & View Doctors</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterHospitals(query) {
+      const q = query.toLowerCase();
+      const filtered = allHospitals.filter(h => 
+        h.name.toLowerCase().includes(q) || 
+        h.address.toLowerCase().includes(q) || 
+        h.email.toLowerCase().includes(q)
+      );
+      renderHospitals(filtered);
+    }
+
+    // Doctor step execution
+    async function selectHospital(hospital) {
+      selectedHospital = hospital;
+      localStorage.setItem('self_booking_hospital', JSON.stringify(hospital));
+      localStorage.setItem('edoc_active_hospital_id', hospital.id); // Scope API automatically via X-Hospital-ID header
+      goToStep(2);
+      await loadDoctors();
+    }
+
+    async function loadDoctors() {
+      const container = document.getElementById('doctors-list-container');
+      container.innerHTML = '<div class="text-center text-muted py-5" style="grid-column:1/-1;">Loading doctors at this hospital...</div>';
+      try {
+        const res = await API.get('/doctors/');
+        allDoctors = res.results || (res.data && res.data.results) || res.data || [];
+        renderDoctors(allDoctors);
+      } catch(err) {
+        container.innerHTML = `<div class="text-center text-danger py-5" style="grid-column:1/-1;">Failed to load doctors: ${err.message}</div>`;
+      }
+    }
+
+    function renderDoctors(doctors) {
+      const container = document.getElementById('doctors-list-container');
+      container.innerHTML = '';
+      if(doctors.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5" style="grid-column:1/-1;">No doctors found matching search.</div>';
+        return;
+      }
+
+      doctors.forEach(d => {
+        const specialtyName = d.specialty_name || (d.specialty ? d.specialty.name : 'General Practice');
+        const initials = d.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const card = document.createElement('div');
+        card.className = 'doctor-card';
+        card.onclick = () => selectDoctor(d);
+        card.innerHTML = `
+          <div>
+            <div class="doctor-header">
+              <div class="doctor-avatar-placeholder">Dr</div>
+              <div class="doctor-details">
+                <span class="specialty-badge">${specialtyName}</span>
+                <h4 class="doctor-title">Dr. ${d.name}</h4>
+              </div>
+            </div>
+            <div class="info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <span>${d.email}</span>
+            </div>
+            <div class="info-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>${d.telephone || 'Telephone N/A'}</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-3" style="width:100%;">Select & Book Session Slots</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterDoctors(query) {
+      const q = query.toLowerCase();
+      const filtered = allDoctors.filter(d => 
+        d.name.toLowerCase().includes(q) || 
+        (d.specialty_name && d.specialty_name.toLowerCase().includes(q)) ||
+        (d.specialty && d.specialty.name.toLowerCase().includes(q))
+      );
+      renderDoctors(filtered);
+    }
+
+    // Sessions and BookMyShow Slot Grid step execution
+    async function selectDoctor(doctor) {
+      selectedDoctor = doctor;
+      localStorage.setItem('self_booking_doctor', JSON.stringify(doctor));
+      goToStep(3);
+      
+      const metaEl = document.getElementById('active-booking-meta');
+      const specialtyName = doctor.specialty_name || (doctor.specialty ? doctor.specialty.name : 'General');
+      metaEl.innerHTML = `Attending: <span style="color:var(--primary)">Dr. ${doctor.name}</span> (${specialtyName}) • Scoped: ${selectedHospital.name}`;
+
+      // Build upcoming 7 days horizontal visual date row
+      generateUpcomingWeekDates();
+
+      // Fetch upcoming schedules for the chosen doctor
+      await loadDoctorSchedules();
+    }
+
+    function generateUpcomingWeekDates() {
+      const datesContainer = document.getElementById('dates-slider-container');
+      datesContainer.innerHTML = '';
+      
+      const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      for(let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        
+        const dateStr = d.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        const weekdayStr = weekdays[d.getDay()];
+        const dayNum = d.getDate();
+        
+        const datePill = document.createElement('div');
+        datePill.className = 'date-pill';
+        datePill.id = `date-pill-${dateStr}`;
+        datePill.dataset.date = dateStr;
+        datePill.onclick = () => selectDate(dateStr);
+        datePill.innerHTML = `
+          <span class="date-pill-day">${weekdayStr}</span>
+          <span class="date-pill-num">${dayNum}</span>
+          <span class="date-pill-indicator"></span>
+        `;
+        datesContainer.appendChild(datePill);
+      }
+    }
+
+    async function loadDoctorSchedules() {
+      const grid = document.getElementById('slots-grid-container');
+      grid.innerHTML = '<div class="text-center text-muted py-4" style="grid-column: 1/-1;">Loading schedules and visual slots...</div>';
+      
+      try {
+        const res = await API.get(`/schedules/?upcoming=true&doctor=${selectedDoctor.id}`);
+        doctorSessions = res.results || (res.data && res.data.results) || res.data || [];
+        
+        // Highlight dates that actually have sessions
+        doctorSessions.forEach(session => {
+          const datePill = document.getElementById(`date-pill-${session.schedule_date}`);
+          if (datePill) {
+            datePill.classList.add('has-sessions');
+          }
+        });
+
+        // Autoselect first date by default
+        const todayStr = new Date().toISOString().split('T')[0];
+        selectDate(todayStr);
+
+      } catch (err) {
+        grid.innerHTML = `<div class="text-center text-danger py-4" style="grid-column: 1/-1;">Failed to load schedules: ${err.message}</div>`;
+      }
+    }
+
+    function selectDate(dateStr) {
+      selectedDateStr = dateStr;
+      
+      // Update UI active pills
+      document.querySelectorAll('.date-pill').forEach(pill => pill.classList.remove('active'));
+      const activePill = document.getElementById(`date-pill-${dateStr}`);
+      if(activePill) activePill.classList.add('active');
+
+      // Filter sessions matching selected date
+      const matchedSessions = doctorSessions.filter(s => s.schedule_date === dateStr);
+      renderSlotsGrid(matchedSessions);
+    }
+
+    function renderSlotsGrid(sessions) {
+      const grid = document.getElementById('slots-grid-container');
+      grid.innerHTML = '';
+
+      if(sessions.length === 0) {
+        grid.innerHTML = '<div class="text-center text-muted py-5" style="grid-column: 1/-1; width:100%;">No available sessions scheduled for this date. Select another date above.</div>';
+        return;
+      }
+
+      sessions.forEach(s => {
+        const timeFormatted = formatTime12h(s.schedule_time);
+        const available = s.available_slots;
+        let bmsClass = 'available';
+        let bmsText = `${available} slots remaining`;
+
+        if (available <= 0) {
+          bmsClass = 'full';
+          bmsText = 'FULLY BOOKED';
+        } else if (available <= 2) {
+          bmsClass = 'limited';
+          bmsText = 'ONLY ' + available + ' LEFT';
+        }
+
+        const pill = document.createElement('div');
+        pill.className = `bms-slot-pill ${bmsClass}`;
+        if (available > 0) {
+          pill.onclick = () => promptBookingConfirmation(s);
+        }
+        pill.innerHTML = `
+          <span class="bms-slot-time">${timeFormatted}</span>
+          <span class="bms-slot-status">${bmsText}</span>
+          <span style="font-size:10px; margin-top:2px; font-weight:600; opacity:0.7;">${s.title}</span>
+        `;
+        grid.appendChild(pill);
+      });
+    }
+
+    function formatTime12h(timeStr) {
+      if (!timeStr) return '';
+      const parts = timeStr.split(':');
+      let hr = parseInt(parts[0]);
+      const min = parts[1];
+      const ampm = hr >= 12 ? 'PM' : 'AM';
+      hr = hr % 12;
+      hr = hr ? hr : 12; // 0 should be 12
+      return `${hr}:${min} ${ampm}`;
+    }
+
+    // Modal Prompts & Finalization
+    function promptBookingConfirmation(session) {
+      selectedSession = session;
+      
+      const specialtyName = selectedDoctor.specialty_name || (selectedDoctor.specialty ? selectedDoctor.specialty.name : 'General');
+      document.getElementById('conf-hospital').textContent = selectedHospital.name;
+      document.getElementById('conf-doctor').textContent = `Dr. ${selectedDoctor.name}`;
+      document.getElementById('conf-specialty').textContent = specialtyName;
+      document.getElementById('conf-date').textContent = Utils.formatDate(session.schedule_date);
+      document.getElementById('conf-time').textContent = formatTime12h(session.schedule_time);
+
+      document.getElementById('booking-error-msg').style.display = 'none';
+      document.getElementById('bookingConfirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('bookingConfirmModal').classList.remove('active');
+    }
+
+    async function finalizeBooking() {
+      const btn = document.getElementById('btn-finalize-booking');
+      const errEl = document.getElementById('booking-error-msg');
+      errEl.style.display = 'none';
+
+      btn.disabled = true;
+      btn.innerText = 'Processing Payment & Booking...';
+
+      try {
+        const payload = { schedule_id: selectedSession.id };
+        const res = await API.post('/appointments/book/', payload);
+        
+        closeConfirmModal();
+        
+        // Clear cached wizard booking state upon successful book
+        localStorage.removeItem('self_booking_step');
+        localStorage.removeItem('self_booking_hospital');
+        localStorage.removeItem('self_booking_doctor');
+        
+        // Show premium Receipt Ticket!
+        showReceiptTicket(res.data);
+
+      } catch (err) {
+        errEl.innerText = err.message || 'Failed to book appointment. Please try again.';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Book & Pay';
+      }
+    }
+
+    function showReceiptTicket(resData) {
+      const user = Auth.getUser() || { name: 'Patient' };
+      const specialtyName = selectedDoctor.specialty_name || (selectedDoctor.specialty ? selectedDoctor.specialty.name : 'General');
+      
+      document.getElementById('receipt-appt-number').innerText = String(resData.appointment_number).padStart(2, '0');
+      document.getElementById('receipt-patient-name').innerText = user.name;
+      document.getElementById('receipt-doctor-name').innerText = `Dr. ${selectedDoctor.name}`;
+      document.getElementById('receipt-hospital-name').innerText = selectedHospital.name;
+      document.getElementById('receipt-specialty').innerText = specialtyName;
+      document.getElementById('receipt-date').innerText = Utils.formatDate(resData.schedule_date);
+      document.getElementById('receipt-time').innerText = formatTime12h(resData.schedule_time);
+      document.getElementById('receipt-hospital-addr').innerText = selectedHospital.address;
+
+      document.getElementById('receiptModal').classList.add('active');
+    }
+
+    function closeReceiptModalAndReset() {
+      document.getElementById('receiptModal').classList.remove('active');
+      restartBooking();
+    }
+
+    function closeReceiptModalAndResetToHistory() {
+      document.getElementById('receiptModal').classList.remove('active');
+      localStorage.removeItem('self_booking_step');
+      localStorage.removeItem('self_booking_hospital');
+      localStorage.removeItem('self_booking_doctor');
+      window.location.href = 'bookings.html';
+    }
+
+    // Initialize Page
+    initPage();
+  </script>
+</body>
+</html>

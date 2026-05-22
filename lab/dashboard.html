@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Dashboard - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- Welcome -->
+        <div style="margin-bottom: 1rem;">
+          <h2 class="font-bold" id="labWelcome" style="font-size: 1.5rem; line-height: 1.2;">Welcome, Lab Technician</h2>
+          <p class="text-muted mt-1" id="labMeta" style="font-size: 0.875rem;">Loading laboratory workspace...</p>
+        </div>
+
+        <!-- Lab Banner Card -->
+        <div class="welcome-banner lab-banner" style="background-image: url('../img/lab_banner_1.png'); margin-bottom: 1.5rem;">
+          <div class="welcome-banner-content">
+            <span class="welcome-banner-tag">Diagnostic Lab</span>
+            <h4 class="welcome-banner-title">Diagnostic Pathology Center</h4>
+            <p class="welcome-banner-desc">Process test requests, collect patient bio-samples, and record clinical lab outcomes.</p>
+          </div>
+
+          <!-- Stats Grid inside Banner -->
+          <div class="welcome-banner-stats">
+            <div class="stat-card">
+              <div class="stat-title">Pending Samples</div>
+              <div class="stat-value" id="statPending">0</div>
+              <div class="text-xs text-primary mt-2 font-semibold">Awaiting collection</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">In Lab (Processing)</div>
+              <div class="stat-value" id="statCollected">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Processing tests</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Completed Today</div>
+              <div class="stat-value" id="statCompleted">0</div>
+              <div class="text-xs text-success mt-2 font-semibold">Reports released today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Total Test Catalog</div>
+              <div class="stat-value" id="statTotalTests">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Configured tests</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <!-- Pending Collections -->
+          <div class="card">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-bold">Awaiting Collection</h4>
+              <a href="../lab/samples.html" class="btn btn-secondary btn-sm">Manage Samples</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Test Required</th>
+                    <th>Sample Type</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingSamplesList">
+                  <tr><td colspan="4" class="text-center text-muted py-4">Checking lab requests...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pending Analysis (Collected) -->
+          <div class="card">
+            <div class="flex justify-between items-center mb-4">
+              <h4 class="font-bold">Pending Result Entry</h4>
+              <a href="../lab/results.html" class="btn btn-secondary btn-sm">All Analysis</a>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Barcode</th>
+                    <th>Patient</th>
+                    <th>Test</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="collectedSamplesList">
+                  <tr><td colspan="4" class="text-center text-muted py-4">Loading queue...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['lab']);
+
+    const labMenu = [
+      { label: 'Dashboard', path: '../lab/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Test Catalog', path: '../lab/tests.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+      { label: 'Sample Logs', path: '../lab/samples.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>' },
+      { label: 'Result Sheets', path: '../lab/results.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../lab/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(labMenu, '../lab/dashboard.html', 'Diagnostic Lab', 'Department Console');
+    Utils.renderHeader('Dashboard');
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('labWelcome').innerText = `Welcome, ${user.name}`;
+      document.getElementById('labMeta').innerText = `${user.hospital_name || 'Hospital'} — Diagnostics & Pathology Unit`;
+    }
+
+    async function loadDashboard() {
+      try {
+        const [testsRes, requestsRes] = await Promise.all([
+          API.get('/lab/tests/'),
+          API.get('/lab/requests/')
+        ]);
+
+        const allTests = testsRes.data.results || testsRes.data || [];
+        const allRequests = requestsRes.data.results || requestsRes.data || [];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Stats
+        const pending = allRequests.filter(r => r.status === 'pending');
+        const collected = allRequests.filter(r => r.status === 'collected');
+        const completedToday = allRequests.filter(r => r.status === 'completed' && r.completed_at && r.completed_at.startsWith(todayStr));
+
+        document.getElementById('statPending').innerText = pending.length;
+        document.getElementById('statCollected').innerText = collected.length;
+        document.getElementById('statCompleted').innerText = completedToday.length;
+        document.getElementById('statTotalTests').innerText = allTests.length;
+
+        // Pending list
+        const pendingTbody = document.getElementById('pendingSamplesList');
+        if (pending.length === 0) {
+          pendingTbody.innerHTML = `<tr><td colspan="4" class="text-center text-success py-4">No pending sample collections.</td></tr>`;
+        } else {
+          pendingTbody.innerHTML = pending.slice(0, 5).map(r => `
+            <tr>
+              <td><strong>${r.patient_name}</strong></td>
+              <td>${r.test_name} (${r.test_code})</td>
+              <td><span class="badge badge-secondary">${r.sample_type}</span></td>
+              <td>
+                <a href="../lab/samples.html?collect=${r.id}" class="btn btn-primary btn-sm">Collect</a>
+              </td>
+            </tr>`).join('');
+        }
+
+        // Collected list
+        const collectedTbody = document.getElementById('collectedSamplesList');
+        if (collected.length === 0) {
+          collectedTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No samples awaiting analysis.</td></tr>`;
+        } else {
+          collectedTbody.innerHTML = collected.slice(0, 5).map(r => `
+            <tr>
+              <td><span class="font-mono text-sm">${r.sample_barcode || '—'}</span></td>
+              <td><strong>${r.patient_name}</strong></td>
+              <td>${r.test_code}</td>
+              <td>
+                <a href="../lab/results.html?request=${r.id}" class="btn btn-secondary btn-sm">Enter Results</a>
+              </td>
+            </tr>`).join('');
+        }
+      } catch (err) {
+        Utils.showToast('Failed to load lab dashboard data', 'danger');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

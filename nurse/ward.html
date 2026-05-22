@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ward Map - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <style>
+    .bed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .bed-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1rem;
+      background: var(--bg-surface);
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .bed-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .bed-status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-available { background: #d1fae5; color: #065f46; }
+    .status-occupied { background: #fee2e2; color: #991b1b; }
+    .status-maintenance { background: #fef3c7; color: #92400e; }
+    .room-header {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+          <div>
+            <h2 class="font-bold">Ward Map</h2>
+            <p class="text-muted mt-1">Visual overview of beds and occupancies across rooms.</p>
+          </div>
+          <div class="flex gap-2">
+             <button class="btn btn-secondary btn-sm" onclick="loadWardMap()">Refresh Map</button>
+          </div>
+        </div>
+
+        <div id="wardContainer">
+          <div class="text-center text-muted py-4">Loading ward map...</div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['nurse']);
+
+    const nurseMenu = [
+      { label: 'Ward Dashboard', path: '../nurse/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Inpatients', path: '../nurse/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'Ward Map', path: '../nurse/ward.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm0 0V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M9 3v6m6-6v6"/></svg>' },
+      { label: 'Record Vitals', path: '../nurse/vitals.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' },
+      { label: 'My Profile', path: '../nurse/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(nurseMenu, '../nurse/ward.html', 'Nursing Console', 'Ward Portal');
+    Utils.renderHeader('Ward Map');
+
+    async function loadWardMap() {
+      try {
+        const [bedsRes, admissionsRes] = await Promise.all([
+          API.get('/beds/'),
+          API.get('/ipd/admissions/?status=admitted')
+        ]);
+        
+        const beds = Array.isArray(bedsRes?.data) ? bedsRes.data : (Array.isArray(bedsRes) ? bedsRes : []);
+        const admissions = Array.isArray(admissionsRes?.data) ? admissionsRes.data : (Array.isArray(admissionsRes) ? admissionsRes : []);
+        
+        const container = document.getElementById('wardContainer');
+        
+        if (beds.length === 0) {
+          container.innerHTML = `<div class="text-center text-muted py-8 bg-white border rounded" style="border-radius:var(--radius); border-color:var(--border-color);">No beds found in the system.</div>`;
+          return;
+        }
+
+        // Group beds by room
+        const groupedBeds = {};
+        beds.forEach(bed => {
+          const roomKey = bed.room_number || 'Unknown Room';
+          if (!groupedBeds[roomKey]) groupedBeds[roomKey] = { roomType: bed.room_type, beds: [] };
+          
+          // Match admission to bed if occupied
+          let admission = null;
+          if (bed.status.toLowerCase() === 'occupied') {
+            admission = admissions.find(a => a.room_label === bed.room_number && a.bed_label === bed.bed_number);
+          }
+          
+          groupedBeds[roomKey].beds.push({ ...bed, admission });
+        });
+
+        let html = '';
+        Object.keys(groupedBeds).sort().forEach(roomNumber => {
+          const roomData = groupedBeds[roomNumber];
+          html += `<h4 class="room-header font-bold text-lg">Room: ${roomNumber} <span class="text-sm text-muted font-normal ml-2 capitalize">(${roomData.roomType || 'General'})</span></h4>`;
+          html += `<div class="bed-grid">`;
+          
+          roomData.beds.sort((a,b) => a.bed_number.localeCompare(b.bed_number)).forEach(bed => {
+            const statusLower = bed.status.toLowerCase();
+            const statusClass = statusLower === 'available' ? 'status-available' : (statusLower === 'occupied' ? 'status-occupied' : 'status-maintenance');
+            
+            html += `
+              <div class="bed-card">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="font-bold text-lg">Bed ${bed.bed_number}</div>
+                  <span class="bed-status ${statusClass}">${bed.status}</span>
+                </div>
+            `;
+            
+            if (statusLower === 'occupied' && bed.admission) {
+              const a = bed.admission;
+              html += `
+                <div class="mt-2 text-sm">
+                  <div class="font-semibold text-primary">${a.patient_name}</div>
+                  <div class="text-xs text-muted mt-1">Doctor: ${a.doctor_name || '—'}</div>
+                  <div class="text-xs text-muted mt-1">Admitted: ${a.admission_date ? a.admission_date.split('T')[0] : '—'}</div>
+                </div>
+                <div class="mt-auto pt-3">
+                  <a href="../nurse/vitals.html?admission=${a.id}" class="btn btn-primary btn-sm w-full text-center" style="display:block;">Record Vitals</a>
+                </div>
+              `;
+            } else if (statusLower === 'available') {
+              html += `
+                <div class="mt-2 text-sm text-muted italic">Ready for admission</div>
+              `;
+            } else {
+               html += `
+                <div class="mt-2 text-sm text-muted italic">Unavailable</div>
+              `;
+            }
+            
+            html += `</div>`;
+          });
+          
+          html += `</div>`;
+        });
+        
+        container.innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        Utils.showToast('Failed to load ward map', 'danger');
+        document.getElementById('wardContainer').innerHTML = `<div class="text-center text-danger py-4">Error loading ward map. Please try again.</div>`;
+      }
+    }
+
+    loadWardMap();
+  </script>
+</body>
+</html>

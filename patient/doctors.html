@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/patient.css">
+    <title>All Doctors</title>
+    <style>
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td width="40%">
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">All Doctors</p>
+                    </td>
+                    <td width="30%">
+                        <form id="searchForm" style="display: flex;">
+                            <input type="search" id="doctorSearch" class="input-text header-searchbar" placeholder="Search Doctor name or Email" style="width: 100%;">
+                            <input type="submit" value="Search" class="login-btn btn-primary btn" style="margin-left: 10px; margin-top:0;">
+                        </form>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div class="abc" style="width: 93%; height: 500px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff; margin-top: 10px;">
+                <table width="100%" class="sub-table" border="0" id="doctors-table">
+                    <thead>
+                        <tr>
+                            <th class="table-headin">Doctor Name</th>
+                            <th class="table-headin">Email</th>
+                            <th class="table-headin">Specialty</th>
+                            <th class="table-headin">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading doctors list...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <!-- Doctor Details Modal -->
+    <div id="viewModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 40%; margin: 0; animation: transitionIn-Y-bottom 0.3s;">
+            <h2>Doctor Details</h2>
+            <a class="close" href="#" id="closeModal">&times;</a>
+            <div class="content" style="max-height: 400px; overflow-y: auto;">
+                <table width="100%" border="0" style="margin-top: 20px; line-height: 2;">
+                    <tr>
+                        <td width="30%" style="font-weight: 600;">Name:</td>
+                        <td id="modal-name">Dr. Name</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Email:</td>
+                        <td id="modal-email">email@edoc.com</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">NIC:</td>
+                        <td id="modal-nic">00000000</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Telephone:</td>
+                        <td id="modal-telephone">0711111111</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Specialty:</td>
+                        <td id="modal-specialty">Specialty Name</td>
+                    </tr>
+                </table>
+                <br>
+                <div style="text-align: right;">
+                    <button class="btn btn-primary" id="modalBookBtn" style="padding: 10px 20px;">Book Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('doctors');
+
+        const tableBody = document.querySelector('#doctors-table tbody');
+        const searchForm = document.getElementById('searchForm');
+        const viewModal = document.getElementById('viewModal');
+        let selectedDoctorId = null;
+
+        async function loadDoctors(search = '') {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading doctors...</td></tr>`;
+            try {
+                const res = await ApiService.doctors.getAll(search);
+                const doctors = res.data;
+                tableBody.innerHTML = '';
+
+                if (doctors.length > 0) {
+                    doctors.forEach(doc => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 15px; font-weight: 600; font-size:15px;">Dr. ${doc.name}</td>
+                            <td style="padding: 15px;">${doc.email}</td>
+                            <td style="padding: 15px;">${doc.specialty_name || 'General'}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <button class="btn btn-primary-soft btn-view" data-id="${doc.id}" style="padding: 5px 15px; font-size:13px;">View Info</button>
+                                <button class="btn btn-primary btn-book" data-id="${doc.id}" style="padding: 5px 15px; font-size:13px; margin-left: 5px;">View Sessions</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+
+                    // View Info click handlers
+                    document.querySelectorAll('.btn-view').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const id = e.target.getAttribute('data-id');
+                            await openDoctorDetails(id);
+                        });
+                    });
+
+                    // View Sessions click handlers
+                    document.querySelectorAll('.btn-book').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const id = e.target.getAttribute('data-id');
+                            window.location.href = `schedule.html?doctor=${id}`;
+                        });
+                    });
+
+                } else {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: #999;">
+                                No doctors found matching your query.
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function openDoctorDetails(id) {
+            try {
+                const res = await ApiService.doctors.get(id);
+                const doc = res.data;
+                selectedDoctorId = doc.id;
+
+                document.getElementById('modal-name').textContent = `Dr. ${doc.name}`;
+                document.getElementById('modal-email').textContent = doc.email;
+                document.getElementById('modal-nic').textContent = doc.nic || 'N/A';
+                document.getElementById('modal-telephone').textContent = doc.telephone || 'N/A';
+                document.getElementById('modal-specialty').textContent = doc.specialty_name || 'General';
+
+                viewModal.style.display = 'flex';
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Close Modal
+        document.getElementById('closeModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            viewModal.style.display = 'none';
+        });
+
+        document.getElementById('modalBookBtn').addEventListener('click', () => {
+            if (selectedDoctorId) {
+                window.location.href = `schedule.html?doctor=${selectedDoctorId}`;
+            }
+        });
+
+        // Search submit
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const searchVal = document.getElementById('doctorSearch').value.trim();
+            loadDoctors(searchVal);
+        });
+
+        // Initial Load
+        loadDoctors();
+    </script>
+
+    <script src="../assets/js/utils.js"></script>
+</body>
+</html>

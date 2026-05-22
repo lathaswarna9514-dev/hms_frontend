@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/patient.css">
+    <title>Help & Support Desk</title>
+    <style>
+        .sub-table {
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+        .support-card {
+            border: 1px solid #ebebeb;
+            border-radius: 8px;
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px; margin-bottom: 10px;">
+                <tr>
+                    <td>
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">Customer Support Desk</p>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div style="width: 93%; text-align: left; margin-bottom: 40px; display: grid; grid-template-columns: 2fr 3fr; gap: 30px;">
+                
+                <!-- Raise Support Ticket -->
+                <div>
+                    <div class="support-card">
+                        <h3 style="margin-top:0; color:#1b62b3; border-bottom:1px solid #eee; padding-bottom:10px;">Raise Support Ticket</h3>
+                        <form id="raiseTicketForm" onsubmit="submitTicket(event)">
+                            <div class="form-group">
+                                <label class="form-label" for="subjectInput">Inquiry Subject</label>
+                                <input type="text" id="subjectInput" class="form-input" placeholder="e.g. Schedule cancellation problem" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="messageInput">Describe Your Problem</label>
+                                <textarea id="messageInput" class="form-input" placeholder="Describe the details of your problem or request..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; font-weight:600; border-radius:6px;">Submit Support Request</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- My Tickets History -->
+                <div>
+                    <div class="support-card" style="min-height:350px;">
+                        <h3 style="margin-top:0; color:#222; border-bottom:1px solid #eee; padding-bottom:10px;">My Support History</h3>
+                        <div id="tickets-history" style="max-height:400px; overflow-y:auto; padding-top:10px;">
+                            <div style="text-align:center; padding:40px; color:#777;">Loading ticket files...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <!-- Ticket Details View Modal -->
+    <div id="viewTicketModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 40%; margin: 0; animation: transitionIn-Y-bottom 0.3s; text-align: left;">
+            <h2>Support Ticket Overview</h2>
+            <a class="close" href="#" onclick="closeTicketModal()">&times;</a>
+            <div class="content" id="ticketModalBody" style="max-height: 400px; overflow-y: auto; font-size: 14px; line-height: 1.6;">
+                <p>Loading ticket details...</p>
+            </div>
+            <div style="text-align: right; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button class="btn btn-primary" onclick="closeTicketModal()" style="padding: 6px 20px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('support');
+
+        let myTickets = [];
+
+        window.closeTicketModal = function() {
+            document.getElementById('viewTicketModal').style.display = 'none';
+        };
+
+        window.viewTicketDetail = function(tktId) {
+            const t = myTickets.find(x => x.id == tktId);
+            if (!t) return;
+
+            const modalBody = document.getElementById('ticketModalBody');
+            const formattedDate = new Date(t.created_at).toLocaleString();
+
+            modalBody.innerHTML = `
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa;">
+                    <div style="font-size:12px; color:#777; margin-bottom:5px;">Reference: <strong>#TKT-${t.id}</strong></div>
+                    <div style="font-size:12px; color:#777; margin-bottom:10px;">Date Submitted: ${formattedDate}</div>
+                    
+                    <h4 style="margin:5px 0 10px 0; color:#1b62b3;">${t.subject}</h4>
+                    <p style="white-space:pre-wrap; background:#fff; border:1px solid #eee; padding:10px; border-radius:4px; font-size:13px; color:#333;">${t.message}</p>
+                    
+                    <div style="margin-top:15px; display:flex; align-items:center; gap:8px;">
+                        <span>Resolution Status:</span>
+                        <span style="padding:3px 8px; font-size:11px; border-radius:10px; font-weight:600; 
+                               background:${t.status === 'resolved' ? '#d4edda' : t.status === 'in-progress' ? '#fff3cd' : '#f8d7da'}; 
+                               color:${t.status === 'resolved' ? '#155724' : t.status === 'in-progress' ? '#856404' : '#721c24'};">
+                            ${t.status.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('viewTicketModal').style.display = 'flex';
+        };
+
+        async function fetchTickets() {
+            try {
+                const res = await ApiService.support.getMyTickets();
+                myTickets = res.data || [];
+                renderTicketsHistory();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('tickets-history').innerHTML = `
+                    <div style="text-align: center; color: #d9534f; padding: 40px;">
+                        Failed to retrieve ticket history.
+                    </div>
+                `;
+            }
+        }
+
+        function renderTicketsHistory() {
+            const container = document.getElementById('tickets-history');
+            container.innerHTML = '';
+
+            if (myTickets.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#777; padding:40px; font-size:13px;">No past support inquiries registered.</div>`;
+                return;
+            }
+
+            myTickets.forEach(t => {
+                const item = document.createElement('div');
+                item.style.padding = '12px';
+                item.style.borderBottom = '1px solid #eee';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.cursor = 'pointer';
+                item.onclick = () => viewTicketDetail(t.id);
+
+                const createdDate = new Date(t.created_at).toLocaleDateString();
+
+                item.innerHTML = `
+                    <div>
+                        <div style="font-weight:700; font-size:14px; color:#222;">${t.subject}</div>
+                        <span style="font-size:11px; color:#777;">Reference: #TKT-${t.id} &bull; ${createdDate}</span>
+                    </div>
+                    <span style="padding:2px 8px; font-size:10px; border-radius:10px; font-weight:600; 
+                               background:${t.status === 'resolved' ? '#d4edda' : t.status === 'in-progress' ? '#fff3cd' : '#f8d7da'}; 
+                               color:${t.status === 'resolved' ? '#155724' : t.status === 'in-progress' ? '#856404' : '#721c24'};">
+                        ${t.status.toUpperCase()}
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.submitTicket = async function(e) {
+            e.preventDefault();
+            const subject = document.getElementById('subjectInput').value.trim();
+            const message = document.getElementById('messageInput').value.trim();
+
+            if (!subject || !message) return;
+
+            try {
+                await ApiService.support.create({ subject, message });
+                alert('Support ticket submitted successfully! A confirmation email has been dispatched to your email.');
+                document.getElementById('raiseTicketForm').reset();
+                fetchTickets();
+            } catch (err) {
+                alert(err.message || 'Failed to submit support request.');
+            }
+        };
+
+        fetchTickets();
+    </script>
+
+    <script src="../assets/js/utils.js"></script>
+</body>
+</html>

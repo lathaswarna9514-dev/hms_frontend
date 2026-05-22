@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/patient.css">
+    <title>My Scheduled Sessions</title>
+    <style>
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td>
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">My Scheduled Sessions</p>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div class="abc" style="width: 93%; height: 500px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff; margin-top: 10px;">
+                <table width="100%" class="sub-table" border="0" id="sessions-table">
+                    <thead>
+                        <tr>
+                            <th class="table-headin">Session Title</th>
+                            <th class="table-headin">Scheduled Date & Time</th>
+                            <th class="table-headin">Booked Patients</th>
+                            <th class="table-headin">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <!-- View Bookings Modal -->
+    <div id="viewModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 50%; margin: 0; animation: transitionIn-Y-bottom 0.3s;">
+            <h2>Session Bookings</h2>
+            <a class="close" href="#" id="closeModal">&times;</a>
+            <div class="content" style="max-height: 400px; overflow-y: auto;">
+                <table width="100%" border="0" style="line-height: 2;">
+                    <tr>
+                        <td width="30%" style="font-weight: 600;">Title:</td>
+                        <td id="view-title">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Scheduled Date:</td>
+                        <td id="view-date">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Time:</td>
+                        <td id="view-time">-</td>
+                    </tr>
+                </table>
+                <br>
+                <p style="font-weight: 600; margin-bottom: 5px;">Booked Patients List:</p>
+                <div style="border: 1px solid #ebebeb; border-radius: 6px; overflow: hidden; background: #fafafa;">
+                    <table width="100%" border="0" id="bookings-list-table">
+                        <thead style="background: #eee;">
+                            <tr>
+                                <th style="padding: 8px;">Appt No.</th>
+                                <th style="padding: 8px;">Patient Name</th>
+                                <th style="padding: 8px;">Telephone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 20px; color: #777;">No patients booked yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('sessions');
+
+        const tableBody = document.querySelector('#sessions-table tbody');
+        const viewModal = document.getElementById('viewModal');
+
+        async function loadSessions() {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td></tr>`;
+            try {
+                const res = await ApiService.schedules.getMyDoctorSchedules();
+                tableBody.innerHTML = '';
+                if (res.data.length > 0) {
+                    res.data.forEach(sess => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 15px; font-weight: 600;">${sess.title}</td>
+                            <td style="padding: 15px; text-align: center;">${sess.schedule_date} @ ${sess.schedule_time}</td>
+                            <td style="padding: 15px; text-align: center; font-weight: 600;">${sess.booked_count} / ${sess.max_patients}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <button class="btn btn-primary-soft btn-view" data-id="${sess.id}" style="padding: 5px 15px; font-size:13px;">View Bookings</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+
+                    // Handler
+                    document.querySelectorAll('.btn-view').forEach(btn => {
+                        btn.addEventListener('click', (e) => viewSessionBookings(e.target.getAttribute('data-id')));
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #999;">No sessions scheduled.</td></tr>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function viewSessionBookings(id) {
+            try {
+                const res = await ApiService.schedules.get(id);
+                const data = res.data;
+
+                document.getElementById('view-title').textContent = data.title;
+                document.getElementById('view-date').textContent = data.schedule_date;
+                document.getElementById('view-time').textContent = data.schedule_time;
+
+                const bookingsBody = document.querySelector('#bookings-list-table tbody');
+                bookingsBody.innerHTML = '';
+
+                if (data.booked_patients && data.booked_patients.length > 0) {
+                    data.booked_patients.forEach(appt => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 8px; text-align: center;">#${appt.appointment_number}</td>
+                            <td style="padding: 8px; font-weight: 600;">${appt.patient_name}</td>
+                            <td style="padding: 8px; text-align: center;">${appt.patient_telephone || 'N/A'}</td>
+                        `;
+                        bookingsBody.appendChild(tr);
+                    });
+                } else {
+                    bookingsBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">No patients booked yet.</td></tr>`;
+                }
+
+                viewModal.style.display = 'flex';
+            } catch (err) {
+                alert('Error loading bookings.');
+            }
+        }
+
+        // Close Modal
+        document.getElementById('closeModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            viewModal.style.display = 'none';
+        });
+
+        // Init
+        loadSessions();
+    </script>
+</body>
+</html>

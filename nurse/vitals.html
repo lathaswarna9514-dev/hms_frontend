@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Vitals - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">Record Patient Vitals</h2>
+          <p class="text-muted mt-1">Chart nursing round observations for inpatient monitoring.</p>
+        </div>
+
+        <!-- Admission Selector -->
+        <div class="card" style="max-width:680px; margin-bottom:1.5rem;">
+          <div class="form-group">
+            <label class="form-label" for="admissionSelect">Select Inpatient Admission</label>
+            <select id="admissionSelect" class="form-input" onchange="loadHistory()">
+              <option value="">Choose patient...</option>
+            </select>
+          </div>
+          <div id="patientInfo" style="display:none;" class="mt-3 p-3" style="background:var(--bg-secondary); border-radius:var(--radius);">
+            <span class="font-bold" id="patientNameDisplay"></span>
+            <span class="text-muted ml-2" id="patientBedDisplay"></span>
+          </div>
+        </div>
+
+        <!-- Vitals Entry Form -->
+        <div class="card" style="max-width:680px; margin-bottom:1.5rem;" id="vitalsFormCard">
+          <h4 class="font-bold mb-4">New Vitals Entry</h4>
+          <form id="vitalsForm" onsubmit="submitVitals(event)">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="form-group">
+                <label class="form-label" for="bpSys">BP Systolic (mmHg)</label>
+                <input type="number" id="bpSys" class="form-input" placeholder="e.g. 120" min="50" max="250">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="bpDia">BP Diastolic (mmHg)</label>
+                <input type="number" id="bpDia" class="form-input" placeholder="e.g. 80" min="30" max="150">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="pulse">Pulse Rate (bpm)</label>
+                <input type="number" id="pulse" class="form-input" placeholder="e.g. 72" min="20" max="250">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="temp">Temperature (°F)</label>
+                <input type="number" id="temp" class="form-input" placeholder="e.g. 98.6" step="0.1" min="90" max="110">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="spo2">SpO2 (%)</label>
+                <input type="number" id="spo2" class="form-input" placeholder="e.g. 98" min="50" max="100">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="rr">Respiratory Rate (breaths/min)</label>
+                <input type="number" id="rr" class="form-input" placeholder="e.g. 16" min="5" max="60">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="vitNotes">Nursing Notes</label>
+              <textarea id="vitNotes" class="form-input" rows="3" placeholder="Observations, medication given, patient condition..."></textarea>
+            </div>
+            <div class="flex justify-end mt-2">
+              <button type="submit" class="btn btn-primary">Save Vitals Record</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Vitals History -->
+        <div class="card" style="max-width:680px;" id="vitalsHistoryCard" style="display:none;">
+          <h4 class="font-bold mb-4">Recent Vitals History</h4>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Recorded At</th>
+                  <th>BP</th>
+                  <th>Pulse</th>
+                  <th>Temp</th>
+                  <th>SpO2</th>
+                  <th>RR</th>
+                </tr>
+              </thead>
+              <tbody id="vitalsHistory">
+                <tr><td colspan="6" class="text-center text-muted">Select a patient to view history.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['nurse']);
+
+    const nurseMenu = [
+      { label: 'Ward Dashboard', path: '../nurse/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Inpatients', path: '../nurse/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'Ward Map', path: '../nurse/ward.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm0 0V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M9 3v6m6-6v6"/></svg>' },
+      { label: 'Record Vitals', path: '../nurse/vitals.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' },
+      { label: 'My Profile', path: '../nurse/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(nurseMenu, '../nurse/vitals.html', 'Nursing Console', 'Ward Portal');
+    Utils.renderHeader('Record Vitals');
+
+    async function loadAdmissions() {
+      try {
+        const res = await API.get('/ipd/admissions/?status=admitted');
+        const admissions = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        const select = document.getElementById('admissionSelect');
+        admissions.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.text = `${a.patient_name} — ${a.bed_label || 'No bed'} (${a.room_label || '—'})`;
+          select.appendChild(opt);
+        });
+
+        // Pre-select from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const admId = urlParams.get('admission');
+        if (admId) {
+          select.value = admId;
+          loadHistory();
+        }
+      } catch (err) {
+        Utils.showToast('Failed to load admissions', 'danger');
+      }
+    }
+
+    async function loadHistory() {
+      const admId = document.getElementById('admissionSelect').value;
+      if (!admId) return;
+
+      try {
+        const res = await API.get(`/ipd/vitals/?admission=${admId}`);
+        const vitals = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        const tbody = document.getElementById('vitalsHistory');
+        document.getElementById('vitalsHistoryCard').style.display = 'block';
+
+        if (vitals.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No vitals recorded yet for this patient.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = vitals.map(v => `
+          <tr>
+            <td><span class="text-xs">${new Date(v.recorded_at).toLocaleString()}</span></td>
+            <td>${v.blood_pressure_systolic || '—'}/${v.blood_pressure_diastolic || '—'}</td>
+            <td>${v.pulse_rate || '—'} bpm</td>
+            <td>${v.temperature || '—'} °F</td>
+            <td>${v.spo2 || '—'}%</td>
+            <td>${v.respiratory_rate || '—'}/min</td>
+          </tr>`).join('');
+      } catch (err) {
+        Utils.showToast('Failed to load vitals history', 'danger');
+      }
+    }
+
+    async function submitVitals(e) {
+      e.preventDefault();
+      const admId = document.getElementById('admissionSelect').value;
+      if (!admId) { Utils.showToast('Please select an inpatient first', 'warning'); return; }
+
+      const payload = {
+        admission: admId,
+        blood_pressure_systolic: document.getElementById('bpSys').value || null,
+        blood_pressure_diastolic: document.getElementById('bpDia').value || null,
+        pulse_rate: document.getElementById('pulse').value || null,
+        temperature: document.getElementById('temp').value || null,
+        spo2: document.getElementById('spo2').value || null,
+        respiratory_rate: document.getElementById('rr').value || null,
+        notes: document.getElementById('vitNotes').value
+      };
+
+      try {
+        await API.post('/ipd/vitals/', payload);
+        Utils.showToast('Vitals recorded successfully', 'success');
+        document.getElementById('vitalsForm').reset();
+        loadHistory();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to save vitals', 'danger');
+      }
+    }
+
+    loadAdmissions();
+  </script>
+</body>
+</html>

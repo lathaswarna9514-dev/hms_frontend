@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Attendance - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <!-- Layout Wrapper -->
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="font-bold">Staff Attendance Log</h2>
+          <button class="btn btn-primary" onclick="Utils.toggleModal('markAttendanceModal')">Mark Attendance</button>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Role</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceList">
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">Fetching attendance records...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mark Attendance Modal -->
+  <div class="modal-backdrop" id="markAttendanceModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Mark Staff Attendance</h3>
+        <button class="modal-close" onclick="Utils.toggleModal('markAttendanceModal', 'close')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="attendanceForm">
+          <div class="form-group">
+            <label class="form-label">Staff Member</label>
+            <select id="userId" class="form-control" required>
+              <option value="">Select Staff...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="date" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="status" class="form-control" required>
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+              <option value="HALF_DAY">Half Day</option>
+              <option value="LEAVE">On Leave</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Check In Time</label>
+              <input type="time" id="checkIn" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check Out Time</label>
+              <input type="time" id="checkOut" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <input type="text" id="notes" class="form-control" placeholder="Optional notes">
+          </div>
+          <div class="flex justify-end gap-3 mt-4">
+            <button type="button" class="btn btn-secondary" onclick="Utils.toggleModal('markAttendanceModal', 'close')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Record</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['hospital-admin']);
+
+    const adminMenu = [
+      { label: 'Dashboard Overview', path: '../hospital-admin/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Departments', path: '../hospital-admin/departments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
+      { label: 'Rooms & Bed Ward', path: '../hospital-admin/rooms-beds.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm0 0V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M9 3v6m6-6v6"/></svg>' },
+      { label: 'Doctor Accounts', path: '../hospital-admin/doctors.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' },
+      { label: 'Nurse Accounts', path: '../hospital-admin/nurses.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+      { label: 'Front Desk Desk', path: '../hospital-admin/frontdesk.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+      { label: 'Pharmacy Accounts', path: '../hospital-admin/pharma.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>' },
+      { label: 'Laboratory Accounts', path: '../hospital-admin/lab.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31L3.89 17.5c-.77.92-.11 2.5 1.09 2.5h14.04c1.2 0 1.86-1.58 1.09-2.5L14 9.31V2h-4z"/></svg>' },
+      { label: 'Staff Attendance', path: '../hospital-admin/attendance.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' },
+      { label: 'Configure Shifts', path: '../hospital-admin/shifts.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
+      { label: 'Leave Requests', path: '../hospital-admin/leaves.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' },
+      { label: 'Patient Registry', path: '../hospital-admin/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'Appointments', path: '../hospital-admin/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'Billing & Invoices', path: '../hospital-admin/billing.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
+      { label: 'Hospital Settings', path: '../hospital-admin/settings.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' }
+    ];
+
+    Utils.renderSidebar(adminMenu, '../hospital-admin/attendance.html', 'eDoc Tenant', 'Hospital Portal');
+    Utils.renderHeader('Staff Attendance');
+
+    // Set today's date in form
+    document.getElementById('date').valueAsDate = new Date();
+
+    async function loadStaff() {
+      try {
+        const res = await API.get('/auth/staff/?usertype=doctor');
+        const select = document.getElementById('userId');
+        if (res.results) {
+          select.innerHTML += res.results.map(u => `<option value="${u.id}">${u.name} (${u.usertype})</option>`).join('');
+        }
+      } catch (err) {}
+    }
+
+    async function loadAttendance() {
+      try {
+        const res = await API.get('/common/attendance/');
+        const tbody = document.getElementById('attendanceList');
+        if (res.results && res.results.length > 0) {
+          tbody.innerHTML = res.results.map(a => `
+            <tr>
+              <td><strong>${a.user_name}</strong></td>
+              <td><span class="badge badge-secondary">${a.user_role}</span></td>
+              <td>${a.date}</td>
+              <td><span class="badge ${a.status === 'PRESENT' ? 'badge-success' : a.status === 'ABSENT' ? 'badge-danger' : 'badge-warning'}">${a.status}</span></td>
+              <td>${a.check_in_time ? a.check_in_time.substring(0,5) : '-'}</td>
+              <td>${a.check_out_time ? a.check_out_time.substring(0,5) : '-'}</td>
+              <td>${a.notes || '-'}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No attendance records found.</td></tr>`;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadStaff();
+    loadAttendance();
+
+    document.getElementById('attendanceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        user: document.getElementById('userId').value,
+        date: document.getElementById('date').value,
+        status: document.getElementById('status').value,
+        check_in_time: document.getElementById('checkIn').value || null,
+        check_out_time: document.getElementById('checkOut').value || null,
+        notes: document.getElementById('notes').value
+      };
+
+      try {
+        const response = await API.post('/common/attendance/', payload);
+        if (response.success) {
+          Utils.showToast('Attendance recorded.', 'success');
+          Utils.toggleModal('markAttendanceModal', 'close');
+          document.getElementById('attendanceForm').reset();
+          document.getElementById('date').valueAsDate = new Date();
+          loadAttendance();
+        } else {
+           Utils.showToast(response.message || 'Error saving attendance.', 'danger');
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Error saving attendance.', 'danger');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Front Desk Dashboard - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- Front Desk Banner Card -->
+        <div class="welcome-banner frontdesk-banner" style="background-image: url('../img/frontdesk_banner_1.png');">
+          <div class="welcome-banner-content">
+            <span class="welcome-banner-tag">Front Desk Reception</span>
+            <h2 class="welcome-banner-title" id="fdWelcome" style="font-size:2rem;">Welcome, Front Desk</h2>
+            <p class="welcome-banner-desc" id="fdMeta" style="opacity:0.85;">Loading registration desk dashboard...</p>
+            <h4 class="welcome-banner-title" style="font-size:1.2rem; margin-top:0.5rem; font-weight:600; opacity:0.9;">Patient Registration &amp; Check-In Desk</h4>
+            <p class="welcome-banner-desc">Manage walk-in registrations, schedule appointments, handle hospital check-ins, and direct billing desks.</p>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="welcome-banner-stats">
+            <div class="stat-card">
+              <div class="stat-title">Today's Bookings</div>
+              <div class="stat-value" id="statToday">0</div>
+              <div class="text-xs text-primary mt-2 font-semibold">All sessions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Active Sessions</div>
+              <div class="stat-value" id="statSessions">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Open today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Total Patients</div>
+              <div class="stat-value" id="statPatients">0</div>
+              <div class="text-xs text-success mt-2 font-semibold">Registered</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Available Doctors</div>
+              <div class="stat-value" id="statDoctors">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">With sessions today</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-3 gap-4" style="margin-bottom: 1.5rem;">
+          <a href="../frontdesk/appointments.html" class="card" style="text-decoration:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;padding:1rem;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+            <div style="font-size:1.75rem;margin-bottom:.25rem;">📅</div>
+            <div class="font-bold">Book Appointment</div>
+            <div class="text-sm text-muted mt-1">Register walk-in or phone bookings</div>
+          </a>
+          <a href="../frontdesk/patients.html" class="card" style="text-decoration:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;padding:1rem;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+            <div style="font-size:1.75rem;margin-bottom:.25rem;">🔍</div>
+            <div class="font-bold">Search Patient</div>
+            <div class="text-sm text-muted mt-1">Look up registered patients by name or NIC</div>
+          </a>
+          <a href="../frontdesk/appointments.html" class="card" style="text-decoration:none;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;padding:1rem;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+            <div style="font-size:1.75rem;margin-bottom:.25rem;">📋</div>
+            <div class="font-bold">Today's Appointments</div>
+            <div class="text-sm text-muted mt-1">View all appointments scheduled for today</div>
+          </a>
+        </div>
+
+        <!-- Today's appointments -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="font-bold">Today's Appointment Queue</h4>
+            <a href="../frontdesk/appointments.html" class="btn btn-secondary btn-sm">View All</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Appt #</th>
+                  <th>Patient</th>
+                  <th>Doctor</th>
+                  <th>Session</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="todayAppts">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading today's appointments...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['frontdesk']);
+
+    const fdMenu = [
+      { label: 'Dashboard', path: '../frontdesk/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'OPD Appointments', path: '../frontdesk/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'IPD Admissions', path: '../frontdesk/ipd.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M12 14v8"/><path d="M8 22h8"/><path d="M5 14V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v10"/></svg>' },
+      { label: 'Patient Search', path: '../frontdesk/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' },
+      { label: 'Billing Desk', path: '../frontdesk/billing.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
+      { label: 'My Profile', path: '../frontdesk/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(fdMenu, '../frontdesk/dashboard.html', 'Front Desk', 'Registration Portal');
+    Utils.renderHeader('Front Desk Dashboard');
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('fdWelcome').innerText = `Welcome, ${user.name}`;
+      document.getElementById('fdMeta').innerText = `${user.hospital_name || 'Hospital'} — Patient Registration & Appointment Desk`;
+    }
+
+    async function loadDashboard() {
+      const today = new Date().toISOString().split('T')[0];
+      try {
+        const [apptRes, patRes, sessRes] = await Promise.all([
+          API.get(`/appointments/?date=${today}`),
+          API.get('/patients/'),
+          API.get(`/schedules/?date=${today}&upcoming=true`)
+        ]);
+
+        const appts = apptRes.data || [];
+        const pats = patRes.data || [];
+        const sessions = sessRes.data || [];
+
+        document.getElementById('statToday').innerText = appts.length;
+        document.getElementById('statPatients').innerText = patRes.count || pats.length;
+        document.getElementById('statSessions').innerText = sessions.length;
+
+        const uniqueDoctors = new Set(sessions.map(s => s.doctor_name)).size;
+        document.getElementById('statDoctors').innerText = uniqueDoctors;
+
+        const tbody = document.getElementById('todayAppts');
+        if (appts.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No appointments scheduled for today.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = appts.slice(0, 5).map(a => `
+          <tr>
+            <td><span class="badge badge-secondary">#${a.appointment_number}</span></td>
+            <td><strong>${a.patient_name}</strong></td>
+            <td>${a.doctor_name}</td>
+            <td>${a.session_title}</td>
+            <td><span class="text-sm">${a.schedule_time || '—'}</span></td>
+          </tr>`).join('');
+      } catch (err) {
+        Utils.showToast('Failed to load dashboard data', 'danger');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sample Logging - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">Specimen Logging</h2>
+          <p class="text-muted mt-1">Log collected patient samples and print barcode tracker labels.</p>
+        </div>
+
+        <!-- Sample collection list -->
+        <div class="card">
+          <h4 class="font-bold mb-4">Awaiting Specimen Collection</h4>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Req #</th>
+                  <th>Patient Name</th>
+                  <th>Test Specimen</th>
+                  <th>Required Sample</th>
+                  <th>Prescribing Doctor</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pendingRequestsBody">
+                <tr><td colspan="6" class="text-center text-muted py-4">Checking active testing requests...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Collect Sample Modal -->
+  <div id="collectModal" class="modal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Log Specimen Tube</h4>
+        <button class="btn btn-sm" onclick="closeCollectModal()">&times;</button>
+      </div>
+      <form id="collectForm" onsubmit="submitCollection(event)">
+        <input type="hidden" id="collectReqId">
+        <div class="modal-body">
+          <div style="background:var(--bg-secondary); padding:1rem; border-radius:var(--radius); margin-bottom:1.5rem; border:1px solid var(--border);">
+            <div class="text-xs text-muted font-bold uppercase tracking-wider">Patient Details</div>
+            <div class="font-bold mt-1" id="lblPatientName">—</div>
+            <div class="text-sm text-muted mt-1" id="lblTestName">—</div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="barcodeInput">Tube / Specimen Barcode ID</label>
+            <div class="flex gap-2">
+              <input type="text" id="barcodeInput" class="form-input font-mono" placeholder="Scan or enter barcode" required>
+              <button type="button" class="btn btn-secondary" onclick="generateBarcode()">Auto-Gen</button>
+            </div>
+            <p class="text-xs text-muted mt-1">Scan physical tube label or generate a tracking barcode sequence.</p>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="closeCollectModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Collection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['lab']);
+
+    const labMenu = [
+      { label: 'Dashboard', path: '../lab/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Test Catalog', path: '../lab/tests.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+      { label: 'Sample Logs', path: '../lab/samples.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>' },
+      { label: 'Result Sheets', path: '../lab/results.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../lab/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(labMenu, '../lab/samples.html', 'Diagnostic Lab', 'Department Console');
+    Utils.renderHeader('Sample Logs');
+
+    async function loadRequests() {
+      try {
+        const res = await API.get('/lab/requests/?status=pending');
+        const list = res.data.results || res.data || [];
+        renderTable(list);
+
+        // Pre-trigger modal from URL redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoCollectId = urlParams.get('collect');
+        if (autoCollectId) {
+          const match = list.find(r => r.id == autoCollectId);
+          if (match) openCollectModal(match);
+        }
+      } catch (err) {
+        Utils.showToast('Failed to load pending lab requests', 'danger');
+      }
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('pendingRequestsBody');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No requests awaiting sample collection.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(r => `
+        <tr>
+          <td><span class="font-mono text-sm">#${r.id}</span></td>
+          <td><strong>${r.patient_name}</strong></td>
+          <td>${r.test_name}</td>
+          <td><span class="badge badge-secondary">${r.sample_type}</span></td>
+          <td>${r.prescribed_by || 'Walk-in / Direct'}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick='openCollectModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Collect Sample</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function openCollectModal(r) {
+      document.getElementById('collectReqId').value = r.id;
+      document.getElementById('lblPatientName').innerText = r.patient_name;
+      document.getElementById('lblTestName').innerText = `${r.test_name} (${r.test_code}) — Specimen: ${r.sample_type}`;
+      document.getElementById('barcodeInput').value = '';
+      document.getElementById('collectModal').classList.add('active');
+    }
+
+    function closeCollectModal() {
+      document.getElementById('collectModal').classList.remove('active');
+    }
+
+    function generateBarcode() {
+      const timestamp = Date.now();
+      const code = 'LAB-' + Math.floor(1000 + Math.random() * 9000) + '-' + String(timestamp).slice(-4);
+      document.getElementById('barcodeInput').value = code;
+    }
+
+    async function submitCollection(e) {
+      e.preventDefault();
+      const reqId = document.getElementById('collectReqId').value;
+      const barcode = document.getElementById('barcodeInput').value.trim();
+
+      try {
+        await API.post(`/lab/requests/${reqId}/collect-sample/`, { sample_barcode: barcode });
+        Utils.showToast('Sample collection logged. Printing label...', 'success');
+        closeCollectModal();
+        loadRequests();
+      } catch (err) {
+        Utils.showToast(err.message || 'Log collection failed', 'danger');
+      }
+    }
+
+    loadRequests();
+  </script>
+</body>
+</html>

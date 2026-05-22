@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+        <div style="width: 100%; max-width: 640px; margin: 0 auto;">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">My Profile</h2>
+          <p class="text-muted mt-1">View your profile details.</p>
+        </div>
+
+        <div class="card">
+          <!-- Profile Header -->
+          <div class="flex items-center mb-6" style="gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: white; flex-shrink: 0;" id="userAvatar">U</div>
+            <div>
+              <div class="font-bold text-lg" id="userNameHeader">Loading...</div>
+              <div class="text-sm text-muted" id="userEmailHeader"></div>
+              <span class="badge badge-success mt-2">Hospital Admin</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="userName">Full Name</label>
+            <input type="text" id="userName" class="form-input" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userEmail">Email Address</label>
+            <input type="email" id="userEmail" class="form-input" readonly>
+          </div>
+        </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['admin']);
+
+    const adminMenu = [];
+
+    Utils.renderSidebar(adminMenu, '../admin/profile.html', 'eDoc Console', 'Hospital Admin Portal');
+    Utils.renderHeader('My Profile');
+
+    const user = Auth.getUser();
+
+    async function init() {
+      if (user) {
+        document.getElementById('userName').value = user.name || '';
+        document.getElementById('userEmail').value = user.email || '';
+        document.getElementById('userNameHeader').innerText = user.name || 'User';
+        document.getElementById('userEmailHeader').innerText = user.email || '';
+        
+        let initial = 'U';
+        if (user.name) {
+          initial = user.name.charAt(0).toUpperCase();
+        }
+        document.getElementById('userAvatar').innerText = initial;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

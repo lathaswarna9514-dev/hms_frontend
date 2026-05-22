@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Leave Requests - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <!-- Layout Wrapper -->
+  <div class="layout-container">
+    <!-- Sidebar -->
+    <aside class="sidebar"></aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="content-wrapper">
+        
+        <!-- Header Section -->
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+          <div>
+            <h2 class="font-bold">My Leave Requests</h2>
+            <p class="text-muted mt-1">Submit and track your leave status.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openLeaveModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Request Leave
+          </button>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Submitted At</th>
+                </tr>
+              </thead>
+              <tbody id="leavesTableBody">
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">Fetching your leaves...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Request Leave Modal -->
+  <div id="leaveModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Request Leave</h4>
+        <button class="btn btn-sm" onclick="closeLeaveModal()">&times;</button>
+      </div>
+      <form id="leaveForm" onsubmit="handleFormSubmit(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="startDate">Start Date</label>
+              <input type="date" id="startDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="endDate">End Date</label>
+              <input type="date" id="endDate" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reason">Reason for Leave</label>
+            <textarea id="reason" class="form-input" rows="4" placeholder="Brief explanation of your leave request" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end" style="gap: 0.75rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeLeaveModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['doctor']);
+
+    const doctorMenu = [
+      { label: 'My Dashboard', path: '../doctor/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'My Schedules', path: '../doctor/schedules.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'My Patients', path: '../doctor/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'My Leaves', path: '../doctor/leaves.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' },
+      { label: 'Prescriptions', path: '../doctor/prescription.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' },
+      { label: 'My Profile', path: '../doctor/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(doctorMenu, '../doctor/leaves.html', 'Doctor Console', 'Clinical Portal');
+    Utils.renderHeader('My Leave Requests');
+
+    let leaves = [];
+
+    async function loadLeaves() {
+      try {
+        const response = await API.get('/doctors/leaves/');
+        leaves = response.results || response || [];
+        renderTable();
+      } catch (err) {
+        Utils.showToast('Failed to load leave requests', 'danger');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('leavesTableBody');
+      if (leaves.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No leave requests submitted yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = leaves.map(l => {
+        let statusBadge = '';
+        if (l.status === 'PENDING') statusBadge = '<span class="badge badge-warning">Pending</span>';
+        else if (l.status === 'APPROVED') statusBadge = '<span class="badge badge-success">Approved</span>';
+        else statusBadge = '<span class="badge badge-danger">Rejected</span>';
+
+        const submittedDate = l.created_at ? new Date(l.created_at).toLocaleDateString() : 'N/A';
+
+        return `
+          <tr>
+            <td><span class="font-mono text-sm">${l.id}</span></td>
+            <td><strong>${l.start_date}</strong></td>
+            <td><strong>${l.end_date}</strong></td>
+            <td><span class="text-sm">${l.reason}</span></td>
+            <td>${statusBadge}</td>
+            <td><span class="text-xs text-muted">${submittedDate}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openLeaveModal() {
+      document.getElementById('leaveForm').reset();
+      
+      // Default dates
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('startDate').value = tomorrow.toISOString().substring(0, 10);
+      document.getElementById('endDate').value = tomorrow.toISOString().substring(0, 10);
+
+      document.getElementById('leaveModal').classList.add('active');
+    }
+
+    function closeLeaveModal() {
+      document.getElementById('leaveModal').classList.remove('active');
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        reason: document.getElementById('reason').value
+      };
+
+      if (new Date(payload.start_date) > new Date(payload.end_date)) {
+        Utils.showToast('Start date cannot be after end date', 'danger');
+        return;
+      }
+
+      try {
+        await API.post('/doctors/leaves/', payload);
+        Utils.showToast('Leave request submitted successfully', 'success');
+        closeLeaveModal();
+        loadLeaves();
+      } catch (err) {
+        Utils.showToast(err.message || 'Error submitting leave request', 'danger');
+      }
+    }
+
+    loadLeaves();
+  </script>
+</body>
+</html>

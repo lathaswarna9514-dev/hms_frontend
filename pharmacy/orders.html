@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medication Dispensing - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="font-bold">Medication Dispensing</h2>
+            <p class="text-muted mt-1">Dispense prescription medicines to patients and log transactions.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openDispenseModal()">Dispense Medicine</button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="flex gap-3 mb-5" style="flex-wrap: wrap;">
+          <input type="text" id="orderSearch" class="form-input" placeholder="Search patient name..." style="max-width: 280px;" oninput="debounceSearch()">
+          <button class="btn btn-secondary btn-sm" onclick="clearSearch()">Reset</button>
+        </div>
+
+        <!-- Dispense Logs -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Dispense #</th>
+                  <th>Patient Name</th>
+                  <th>Medicine</th>
+                  <th>Quantity</th>
+                  <th>Cost per Unit</th>
+                  <th>Total Cost</th>
+                  <th>Prescribing Dr</th>
+                  <th>Date & Time</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dispenseTableBody">
+                <tr><td colspan="10" class="text-center text-muted py-4">Loading dispensing logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Dispense Form Modal -->
+  <div id="dispenseModal" class="modal">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Dispense Medication</h4>
+        <button class="btn btn-sm" onclick="closeDispenseModal()">&times;</button>
+      </div>
+      <form id="dispenseForm" onsubmit="submitDispense(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="dispPatientName">Patient Full Name</label>
+            <input type="text" id="dispPatientName" class="form-input" placeholder="e.g. John Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="dispMedicine">Select Medicine</label>
+            <select id="dispMedicine" class="form-input" onchange="updateDispenseSummary()" required>
+              <option value="">Choose medicine...</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="form-group">
+              <label class="form-label" for="dispQty">Quantity to Dispense</label>
+              <input type="number" id="dispQty" class="form-input" min="1" value="1" oninput="updateDispenseSummary()" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="dispDoctor">Prescribed By (Doctor)</label>
+              <input type="text" id="dispDoctor" class="form-input" placeholder="e.g. Dr. Smith">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="dispNotes">Instructions / Notes</label>
+            <textarea id="dispNotes" class="form-input" rows="2" placeholder="e.g. Take 1 tablet twice a day after meals"></textarea>
+          </div>
+
+          <!-- Total Calculation Display -->
+          <div class="mt-4 p-3 bg-secondary rounded flex justify-between items-center" style="background: var(--bg-secondary); border: 1px dashed var(--border);">
+            <div>
+              <span class="text-xs text-muted">Estimated Total Cost</span>
+              <div class="font-bold text-lg text-success" id="dispSummaryTotal">$0.00</div>
+            </div>
+            <div class="text-right text-xs text-muted" id="dispSummaryStock">
+              Stock available: —
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="closeDispenseModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="dispenseSubmitBtn">Confirm Dispense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['pharmacy']);
+
+    const pharmaMenu = [
+      { label: 'Dashboard', path: '../pharmacy/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Medicine Catalog', path: '../pharmacy/products.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>' },
+      { label: 'Dispense Logs', path: '../pharmacy/orders.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../pharmacy/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(pharmaMenu, '../pharmacy/orders.html', 'Pharmacy Unit', 'Department Console');
+    Utils.renderHeader('Dispense Logs');
+
+    let debounceTimeout;
+    let medicinesList = [];
+
+    async function loadDispenseLogs(search = '') {
+      try {
+        const query = search ? `?search=${encodeURIComponent(search)}` : '';
+        const res = await API.get(`/pharmacy/orders/${query}`);
+        const logs = res.data.results || res.data || [];
+        renderTable(logs);
+      } catch (err) {
+        Utils.showToast('Failed to load dispensing records', 'danger');
+      }
+    }
+
+    function renderTable(logs) {
+      const tbody = document.getElementById('dispenseTableBody');
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">No dispensing logs found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => {
+        let statusBadge = '';
+        let actionBtn = '';
+        if (l.status === 'pending') {
+          statusBadge = `<span class="badge badge-warning">Pending</span>`;
+          actionBtn = `<button class="btn btn-success btn-sm" onclick="confirmDispense(${l.id})">Dispense</button>`;
+        } else if (l.status === 'dispensed') {
+          statusBadge = `<span class="badge badge-success">Dispensed</span>`;
+          actionBtn = `—`;
+        } else {
+          statusBadge = `<span class="badge badge-danger">${l.status}</span>`;
+          actionBtn = `—`;
+        }
+
+        return `
+        <tr>
+          <td><span class="font-mono text-sm">#${l.id}</span></td>
+          <td><strong>${l.patient_name}</strong></td>
+          <td>${l.medicine_name}</td>
+          <td>${l.quantity} <span class="text-xs text-muted">${l.medicine_unit || ''}s</span></td>
+          <td>$${parseFloat(l.unit_price).toFixed(2)}</td>
+          <td><strong class="text-success">$${parseFloat(l.total_price).toFixed(2)}</strong></td>
+          <td>${l.prescribed_by || '—'}</td>
+          <td><span class="text-xs">${new Date(l.created_at).toLocaleString()}</span></td>
+          <td>${statusBadge}</td>
+          <td>${actionBtn}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(debounceTimeout);
+      const searchVal = document.getElementById('orderSearch').value.trim();
+      debounceTimeout = setTimeout(() => loadDispenseLogs(searchVal), 350);
+    }
+
+    function clearSearch() {
+      document.getElementById('orderSearch').value = '';
+      loadDispenseLogs();
+    }
+
+    // Modal & Dispensing Handlers
+    async function openDispenseModal() {
+      document.getElementById('dispenseForm').reset();
+      document.getElementById('dispSummaryTotal').innerText = '$0.00';
+      document.getElementById('dispSummaryStock').innerText = 'Stock available: —';
+      
+      try {
+        const res = await API.get('/pharmacy/medicines/');
+        medicinesList = res.data.results || res.data || [];
+        
+        const select = document.getElementById('dispMedicine');
+        select.innerHTML = '<option value="">Choose medicine...</option>' + 
+          medicinesList.map(m => `<option value="${m.id}" data-price="${m.unit_price}" data-stock="${m.stock_quantity}">${m.name} ($${parseFloat(m.unit_price).toFixed(2)})</option>`).join('');
+      } catch (err) {
+        Utils.showToast('Failed to load medicines', 'danger');
+      }
+
+      document.getElementById('dispenseModal').classList.add('active');
+    }
+
+    function closeDispenseModal() {
+      document.getElementById('dispenseModal').classList.remove('active');
+    }
+
+    function updateDispenseSummary() {
+      const select = document.getElementById('dispMedicine');
+      const qtyInput = document.getElementById('dispQty');
+      const opt = select.selectedOptions[0];
+
+      if (!opt.value) {
+        document.getElementById('dispSummaryTotal').innerText = '$0.00';
+        document.getElementById('dispSummaryStock').innerText = 'Stock available: —';
+        return;
+      }
+
+      const price = parseFloat(opt.dataset.price);
+      const stock = parseInt(opt.dataset.stock);
+      const qty = parseInt(qtyInput.value) || 0;
+
+      document.getElementById('dispSummaryTotal').innerText = `$${(price * qty).toFixed(2)}`;
+      document.getElementById('dispSummaryStock').innerHTML = `Stock available: <strong class="${stock < qty ? 'text-danger' : 'text-success'}">${stock}</strong>`;
+    }
+
+    async function submitDispense(e) {
+      e.preventDefault();
+      
+      const medicineId = document.getElementById('dispMedicine').value;
+      const qty = parseInt(document.getElementById('dispQty').value);
+
+      const med = medicinesList.find(m => m.id == medicineId);
+      if (med && med.stock_quantity < qty) {
+        Utils.showToast('Error: Requested quantity exceeds available stock.', 'danger');
+        return;
+      }
+
+      const payload = {
+        medicine: medicineId,
+        patient_name: document.getElementById('dispPatientName').value,
+        quantity: qty,
+        prescribed_by: document.getElementById('dispDoctor').value,
+        notes: document.getElementById('dispNotes').value
+      };
+
+      try {
+        await API.post('/pharmacy/orders/', payload);
+        Utils.showToast('Medication dispensed and logged.', 'success');
+        closeDispenseModal();
+        loadDispenseLogs();
+      } catch (err) {
+        Utils.showToast(err.message || 'Dispensing failed', 'danger');
+      }
+    }
+
+    async function confirmDispense(orderId) {
+      if (!confirm('Are you sure you want to dispense this medication? Stock will be deducted.')) return;
+      try {
+        const res = await API.post(`/pharmacy/orders/${orderId}/dispense/`);
+        Utils.showToast(res.message || 'Medication dispensed successfully.', 'success');
+        loadDispenseLogs();
+      } catch (err) {
+        Utils.showToast(err.message || 'Dispensing failed.', 'danger');
+      }
+    }
+
+    loadDispenseLogs();
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Search - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">Patient Search</h2>
+          <p class="text-muted mt-1">Look up registered patients by name, email, or NIC number.</p>
+        </div>
+
+        <!-- Search -->
+        <div class="flex gap-3 mb-5">
+          <input type="text" id="patSearch" class="form-input" placeholder="Type name, email or NIC..." style="max-width:420px;" oninput="debounceSearch()">
+          <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+        </div>
+
+        <!-- Results Table -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>NIC</th>
+                  <th>Phone</th>
+                  <th>DOB</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="patBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Start typing to search patients...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="patCount" class="text-xs text-muted mt-3 px-1"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Patient Detail Modal -->
+  <div id="patientModal" class="modal">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Patient Details</h4>
+        <button class="btn btn-sm" onclick="closePatientModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="patientModalBody">
+        <p class="text-muted">Loading...</p>
+      </div>
+      <div class="modal-footer flex justify-end" style="gap:.75rem;">
+        <button class="btn btn-secondary" onclick="closePatientModal()">Close</button>
+        <button class="btn btn-primary" id="bookForPatBtn" onclick="bookForPatient()">Book Appointment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['frontdesk']);
+
+    const fdMenu = [
+      { label: 'Dashboard', path: '../frontdesk/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'OPD Appointments', path: '../frontdesk/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'IPD Admissions', path: '../frontdesk/ipd.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M12 14v8"/><path d="M8 22h8"/><path d="M5 14V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v10"/></svg>' },
+      { label: 'Patient Search', path: '../frontdesk/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' },
+      { label: 'Billing Desk', path: '../frontdesk/billing.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
+      { label: 'My Profile', path: '../frontdesk/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(fdMenu, '../frontdesk/patients.html', 'Front Desk', 'Registration Portal');
+    Utils.renderHeader('Patient Search');
+
+    let searchTimeout = null;
+    let viewingPatientId = null;
+
+    async function loadPatients(search = '') {
+      try {
+        const q = search ? `?search=${encodeURIComponent(search)}` : '';
+        const res = await API.get(`/patients/${q}`);
+        const patients = res.data || [];
+        document.getElementById('patCount').innerText = `${res.count || patients.length} patient(s) found.`;
+        renderTable(patients);
+      } catch (err) {
+        Utils.showToast('Failed to load patients', 'danger');
+      }
+    }
+
+    function renderTable(patients) {
+      const tbody = document.getElementById('patBody');
+      if (patients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No patients found matching your search.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = patients.map(p => `
+        <tr>
+          <td><span class="font-mono text-sm">${p.id}</span></td>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.email || '—'}</td>
+          <td><span class="font-mono text-sm">${p.nic || '—'}</span></td>
+          <td>${p.telephone || '—'}</td>
+          <td>${p.dob || '—'}</td>
+          <td>
+            <div class="flex gap-2">
+              <button class="btn btn-secondary btn-sm" onclick="viewPatient(${p.id})">View</button>
+              <a href="../frontdesk/appointments.html" class="btn btn-primary btn-sm">Book</a>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      const q = document.getElementById('patSearch').value.trim();
+      searchTimeout = setTimeout(() => loadPatients(q), 350);
+    }
+
+    function clearSearch() {
+      document.getElementById('patSearch').value = '';
+      document.getElementById('patBody').innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Start typing to search patients...</td></tr>`;
+      document.getElementById('patCount').innerText = '';
+    }
+
+    async function viewPatient(id) {
+      viewingPatientId = id;
+      document.getElementById('patientModal').classList.add('active');
+      document.getElementById('patientModalBody').innerHTML = '<p class="text-muted">Loading patient record...</p>';
+      try {
+        const res = await API.get(`/patients/${id}/`);
+        const p = res.data;
+        document.getElementById('patientModalBody').innerHTML = `
+          <div style="display:grid;gap:.75rem;">
+            <div class="flex items-center gap-3 mb-3">
+              <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-light));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.3rem;">${p.name.charAt(0)}</div>
+              <div>
+                <div class="font-bold text-lg">${p.name}</div>
+                <div class="text-sm text-muted">${p.email}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;font-size:.875rem;">
+              <div><span class="text-muted">NIC:</span> <strong>${p.nic || '—'}</strong></div>
+              <div><span class="text-muted">DOB:</span> <strong>${p.dob || '—'}</strong></div>
+              <div><span class="text-muted">Phone:</span> <strong>${p.telephone || '—'}</strong></div>
+              <div><span class="text-muted">Blood Type:</span> <strong>${p.blood_type || '—'}</strong></div>
+              <div><span class="text-muted">Gender:</span> <strong>${p.gender || '—'}</strong></div>
+            </div>
+          </div>`;
+      } catch (err) {
+        document.getElementById('patientModalBody').innerHTML = '<p class="text-danger">Failed to load patient details.</p>';
+      }
+    }
+
+    function closePatientModal() {
+      document.getElementById('patientModal').classList.remove('active');
+    }
+
+    function bookForPatient() {
+      closePatientModal();
+      window.location.href = '../frontdesk/appointments.html';
+    }
+  </script>
+</body>
+</html>

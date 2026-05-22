@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nurse Dashboard - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- Nurse Banner Card -->
+        <div class="welcome-banner nurse-banner" style="background-image: url('../img/nurse_banner_1.png');">
+          <div class="welcome-banner-content">
+            <span class="welcome-banner-tag">IPD Ward Care</span>
+            <h2 class="welcome-banner-title" id="nurseWelcome" style="font-size:2rem;">Welcome, Nurse</h2>
+            <p class="welcome-banner-desc" id="nurseMeta" style="opacity:0.85;">Loading ward dashboard...</p>
+            <h4 class="welcome-banner-title" style="font-size:1.2rem; margin-top:0.5rem; font-weight:600; opacity:0.9;">Ward Care &amp; Vitals Station</h4>
+            <p class="welcome-banner-desc">Monitor active inpatients, manage ward bed allocations, and record hourly patient vitals.</p>
+          </div>
+
+          <!-- Stats -->
+          <div class="welcome-banner-stats">
+            <div class="stat-card">
+              <div class="stat-title">Current Inpatients</div>
+              <div class="stat-value" id="statAdmitted">0</div>
+              <div class="text-xs text-primary mt-2 font-semibold">Admitted patients</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Discharged Today</div>
+              <div class="stat-value" id="statDischarged">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Completed admissions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Available Beds</div>
+              <div class="stat-value" id="statBeds">0</div>
+              <div class="text-xs text-success mt-2 font-semibold">Open ward beds</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Vitals Pending</div>
+              <div class="stat-value" id="statVitals">—</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Due for next round</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Admissions -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="font-bold">Active Inpatients</h4>
+            <a href="../nurse/patients.html" class="btn btn-secondary btn-sm">View All</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Room / Bed</th>
+                  <th>Doctor</th>
+                  <th>Admitted</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admissionsList">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading inpatient list...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['nurse']);
+
+    const nurseMenu = [
+      { label: 'Ward Dashboard', path: '../nurse/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Inpatients', path: '../nurse/patients.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'Ward Map', path: '../nurse/ward.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm0 0V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M9 3v6m6-6v6"/></svg>' },
+      { label: 'Record Vitals', path: '../nurse/vitals.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' },
+      { label: 'My Profile', path: '../nurse/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(nurseMenu, '../nurse/dashboard.html', 'Nursing Console', 'Ward Portal');
+    Utils.renderHeader('Ward Dashboard');
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('nurseWelcome').innerText = `Welcome, ${user.name}`;
+      document.getElementById('nurseMeta').innerText = `${user.hospital_name || 'Hospital'} — Nursing & Ward Management`;
+    }
+
+    async function loadDashboard() {
+      try {
+        const [admissionsRes, bedsRes] = await Promise.all([
+          API.get('/ipd/admissions/?status=admitted'),
+          API.get('/beds/')
+        ]);
+
+        const admissions = Array.isArray(admissionsRes?.data) ? admissionsRes.data : (Array.isArray(admissionsRes) ? admissionsRes : []);
+        const beds = Array.isArray(bedsRes?.data) ? bedsRes.data : (Array.isArray(bedsRes) ? bedsRes : []);
+        const today = new Date().toISOString().split('T')[0];
+
+        const admitted = admissions.length;
+        const dischargedToday = 0; // placeholder — would need date filter
+        const availableBeds = beds.filter(b => b.status === 'available').length;
+
+        document.getElementById('statAdmitted').innerText = admitted;
+        document.getElementById('statDischarged').innerText = dischargedToday;
+        document.getElementById('statBeds').innerText = availableBeds;
+
+        const tbody = document.getElementById('admissionsList');
+        if (admissions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No active inpatients in this ward.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = admissions.slice(0, 5).map(a => `
+          <tr>
+            <td>
+              <strong>${a.patient_name}</strong><br>
+              <span class="text-xs text-muted">${a.diagnosis || 'No diagnosis'}</span>
+            </td>
+            <td>
+              <span class="font-semibold">${a.room_label || '—'}</span> / 
+              <span class="text-primary">${a.bed_label || '—'}</span>
+            </td>
+            <td>${a.doctor_name || '—'}</td>
+            <td><span class="text-xs">${a.admission_date ? a.admission_date.split('T')[0] : '—'}</span></td>
+            <td>
+              <a href="../nurse/vitals.html?admission=${a.id}" class="btn btn-primary btn-sm">Record Vitals</a>
+            </td>
+          </tr>`).join('');
+      } catch (err) {
+        Utils.showToast('Failed to load ward dashboard', 'danger');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

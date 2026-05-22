@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eDoc HMS - Premium Hospital Management System</title>
+  <link rel="stylesheet" href="./assets/css/design-system.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    .hero-section {
+      background: linear-gradient(135deg, rgba(15, 26, 46, 0.25), rgba(15, 26, 46, 0.35)), url('./img/bg01.jpg') center/cover no-repeat;
+      background-attachment: fixed;
+      background-color: #0f1a2e;
+      min-height: 100vh;
+      width: 100%;
+      padding: 4rem 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      max-width: 900px;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.125rem);
+      color: rgba(255, 255, 255, 0.95);
+      max-width: 700px;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    .flex.gap-4 {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      max-width: 1200px;
+      width: 100%;
+      padding: 0 1rem;
+      margin: 3rem auto;
+    }
+
+    .portal-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      cursor: pointer;
+      min-height: 100%;
+    }
+
+    .portal-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+
+    .portal-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: var(--radius-lg);
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-xl);
+    }
+
+    .portal-name {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--foreground);
+    }
+
+    .portal-desc {
+      font-size: var(--text-sm);
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .footer-bar {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1rem;
+      text-align: center;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      background: var(--card);
+      width: 100%;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .hero-section {
+        min-height: 100vh;
+        padding: 3rem 1rem;
+      }
+
+      .hero-title {
+        font-size: clamp(1.75rem, 6vw, 2.5rem);
+        margin-bottom: 1rem;
+      }
+
+      .hero-subtitle {
+        font-size: clamp(0.875rem, 2vw, 1rem);
+        margin-bottom: 2rem;
+      }
+
+      .flex.gap-4 {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .portal-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0 0.75rem;
+        margin: 2rem auto;
+      }
+
+      .portal-card {
+        padding: 1.5rem;
+      }
+
+      .footer-bar {
+        padding: 1.5rem 1rem;
+        font-size: 0.75rem;
+      }
+
+      .footer-bar .flex {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-section {
+        min-height: 100vh;
+        padding: 2rem 0.75rem;
+      }
+
+      .hero-title {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+        margin-bottom: 0.75rem;
+      }
+
+      .hero-subtitle {
+        font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+        margin-bottom: 1.5rem;
+      }
+
+      .flex.gap-4 {
+        gap: 0.5rem;
+      }
+
+      .portal-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0;
+        margin: 1.5rem auto;
+      }
+
+      .portal-card {
+        padding: 1.25rem;
+      }
+
+      .portal-icon {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.25rem;
+      }
+
+      .portal-name {
+        font-size: 1rem;
+      }
+
+      .portal-desc {
+        font-size: 0.75rem;
+      }
+
+      .footer-bar {
+        padding: 1rem 0.75rem;
+        font-size: 0.65rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .portal-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .hero-section {
+        padding: 8rem 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero Area -->
+  <section class="hero-section">
+    <div style="font-size: var(--text-xs); color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 1rem;">
+      Healthcare Redefined
+    </div>
+    <h1 class="hero-title">Unified Clinical & Administrative Command</h1>
+    <p class="hero-subtitle">eDoc HMS is a multi-role hospital management system built for high-performance OPD, IPD, lab, pharmacy operations, and patient self-service booking.</p>
+    
+    <div class="flex gap-4">
+      <a href="./patient/register.html" class="btn btn-primary btn-lg">Patient Registration</a>
+      <a href="./patient/login.html" class="btn btn-secondary btn-lg">Patient Login Portal</a>
+    </div>
+  </section>
+
+  <!-- Command Portals Selection Grid -->
+  <main class="content-wrapper flex flex-col items-center">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <h2 class="font-bold">Select Command Portal</h2>
+      <p class="text-muted mt-2">Access your authorized HMS role workspace</p>
+    </div>
+
+    <div class="portal-grid">
+      <!-- Patient -->
+      <a href="./patient/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <h3 class="portal-name">Patient Portal</h3>
+        <p class="portal-desc">Schedule appointments, view active prescriptions, check lab reports, and manage billing statements.</p>
+      </a>
+
+      <!-- Doctor -->
+      <a href="./doctor/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: var(--secondary-light); color: var(--secondary);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4M3.5 21h17M14 3v7h7M6 10l4 4"/></svg>
+        </div>
+        <h3 class="portal-name">Doctor Portal</h3>
+        <p class="portal-desc">Manage consultations, write digital prescriptions, track IPD ward rounds, and view lab results.</p>
+      </a>
+
+      <!-- Nurse -->
+      <a href="./nurse/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: var(--success-light); color: var(--success);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="portal-name">Nurse Portal</h3>
+        <p class="portal-desc">Log patient hourly vitals, review active ward maps, check room/bed vacancy, and discharge checklist items.</p>
+      </a>
+
+      <!-- Front Desk -->
+      <a href="./frontdesk/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: var(--warning-light); color: var(--warning);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h3 class="portal-name">Front Desk Portal</h3>
+        <p class="portal-desc">Coordinate walk-in registrations, generate sequence OPD tokens, handle IPD check-ins, and manage bills.</p>
+      </a>
+
+      <!-- Pharmacy -->
+      <a href="./pharmacy/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: var(--info-light); color: var(--info);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/></svg>
+        </div>
+        <h3 class="portal-name">Pharmacy Portal</h3>
+        <p class="portal-desc">Dispense medicines against digital prescriptions, update batch inventory stock, and track suppliers.</p>
+      </a>
+
+      <!-- Laboratory -->
+      <a href="./lab/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: var(--danger-light); color: var(--danger);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M12 2v20M5 7h14M5 17h14"/></svg>
+        </div>
+        <h3 class="portal-name">Laboratory Portal</h3>
+        <p class="portal-desc">Manage lab catalog, collect patient samples, compile result findings, and generate digital reports.</p>
+      </a>
+
+      <!-- Hospital Admin -->
+      <a href="./hospital-admin/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: rgba(15, 26, 46, 0.05); color: var(--foreground);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+        </div>
+        <h3 class="portal-name">Hospital Admin</h3>
+        <p class="portal-desc">Maintain departments, allocate room/beds, configure staff accounts, and audit daily operational metrics.</p>
+      </a>
+
+      <!-- Super Admin -->
+      <a href="./super-admin/login.html" class="portal-card" style="text-decoration:none; color:inherit; display:block;">
+        <div class="portal-icon" style="background: #0284c7; color: #fff;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3 class="portal-name">Super Admin</h3>
+        <p class="portal-desc">Global platform dashboard: provision new hospitals, configure system settings, and manage global tickets.</p>
+      </a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer-bar">
+    <div class="max-w-[1200px] mx-auto px-4 flex justify-between items-center flex-wrap gap-4">
+      <div>&copy; 2026 eDoc HMS. All Rights Reserved.</div>
+      <div class="flex gap-4">
+        <a href="#" class="text-muted">Privacy Policy</a>
+        <span>&middot;</span>
+        <a href="#" class="text-muted">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

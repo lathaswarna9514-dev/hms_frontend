@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/admin.css">
+    <title>Dashboard</title>
+    <style>
+        .dashbord-tables{
+            animation: transitionIn-Y-over 0.5s;
+        }
+        .filter-container{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td colspan="4">
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">Dashboard</p>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <table class="dashbord-tables" border="0" style="width: 95%;">
+                <tr>
+                    <td width="25%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">Total Doctors</div>
+                            <h2 id="stats-doctors" style="font-size: 30px; margin: 10px 0; color: #1b62b3;">0</h2>
+                        </div>
+                    </td>
+                    <td width="25%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">Total Patients</div>
+                            <h2 id="stats-patients" style="font-size: 30px; margin: 10px 0; color: #222;">0</h2>
+                        </div>
+                    </td>
+                    <td width="25%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">New Bookings</div>
+                            <h2 id="stats-bookings" style="font-size: 30px; margin: 10px 0; color: #222;">0</h2>
+                        </div>
+                    </td>
+                    <td width="25%">
+                        <div class="dashboard-items" style="padding: 20px; border-radius: 8px; border: 1px solid #ebebeb; background: #fff;">
+                            <div style="font-size: 14px; font-weight: 500; color: #777;">Today's Sessions</div>
+                            <h2 id="stats-sessions" style="font-size: 30px; margin: 10px 0; color: #222;">0</h2>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" width="50%">
+                        <br>
+                        <p style="font-size: 16px; font-weight: 600; padding-left: 12px; margin-bottom: 10px;">Upcoming Appointments (Next 7 days)</p>
+                        <div class="abc" style="height: 300px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff;">
+                            <table width="100%" class="sub-table" border="0" id="appointments-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-headin">Appt No.</th>
+                                        <th class="table-headin">Patient</th>
+                                        <th class="table-headin">Doctor</th>
+                                        <th class="table-headin">Session Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading appointments...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                    <td colspan="2" width="50%">
+                        <br>
+                        <p style="font-size: 16px; font-weight: 600; padding-left: 12px; margin-bottom: 10px;">Upcoming Sessions (Next 7 days)</p>
+                        <div class="abc" style="height: 300px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff;">
+                            <table width="100%" class="sub-table" border="0" id="sessions-table">
+                                <thead>
+                                    <tr>
+                                        <th class="table-headin">Session Title</th>
+                                        <th class="table-headin">Doctor</th>
+                                        <th class="table-headin">Scheduled Date & Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            </center>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        // Load Navbar
+        initNavigation('dashboard');
+
+        async function loadDashboard() {
+            try {
+                const res = await ApiService.dashboard.getAdminStats();
+                const data = res.data;
+
+                // Load Stats
+                document.getElementById('stats-doctors').textContent = data.stats.total_doctors;
+                document.getElementById('stats-patients').textContent = data.stats.total_patients;
+                document.getElementById('stats-bookings').textContent = data.stats.upcoming_appointments;
+                document.getElementById('stats-sessions').textContent = data.stats.today_sessions;
+
+                // Load Appointments Table
+                const apptBody = document.querySelector('#appointments-table tbody');
+                apptBody.innerHTML = '';
+                if (data.upcoming_appointments && data.upcoming_appointments.length > 0) {
+                    data.upcoming_appointments.forEach(appt => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="text-align: center; padding: 10px;">#${appt.appointment_number}</td>
+                            <td style="padding: 10px; font-weight: 600;">${appt.patient_name}</td>
+                            <td style="padding: 10px;">Dr. ${appt.doctor_name}</td>
+                            <td style="text-align: center; padding: 10px;">${appt.schedule_date}</td>
+                        `;
+                        apptBody.appendChild(tr);
+                    });
+                } else {
+                    apptBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #999;">No appointments scheduled for this week.</td></tr>`;
+                }
+
+                // Load Sessions Table
+                const sessionBody = document.querySelector('#sessions-table tbody');
+                sessionBody.innerHTML = '';
+                if (data.upcoming_sessions && data.upcoming_sessions.length > 0) {
+                    data.upcoming_sessions.forEach(sess => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 10px; font-weight: 600;">${sess.title}</td>
+                            <td style="padding: 10px;">Dr. ${sess.doctor_name}</td>
+                            <td style="text-align: center; padding: 10px;">${sess.schedule_date} @ ${sess.schedule_time}</td>
+                        `;
+                        sessionBody.appendChild(tr);
+                    });
+                } else {
+                    sessionBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 40px; color: #999;">No sessions scheduled for this week.</td></tr>`;
+                }
+
+            } catch (err) {
+                console.error("Failed to load dashboard:", err);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

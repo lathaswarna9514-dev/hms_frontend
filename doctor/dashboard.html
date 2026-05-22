@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Dashboard - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- Doctor Banner Card -->
+        <div class="welcome-banner doctor-banner" style="background-image: url('../img/doctor_banner_1.png');">
+          <div class="welcome-banner-content">
+            <span class="welcome-banner-tag">OPD Clinical Hub</span>
+            <h2 class="welcome-banner-title" id="docWelcome" style="font-size:2rem;">Welcome, Doctor</h2>
+            <p class="welcome-banner-desc" id="docMeta" style="opacity:0.85;">Loading your consultation portal...</p>
+            <h4 class="welcome-banner-title" style="font-size:1.2rem; margin-top:0.5rem; font-weight:600; opacity:0.9;">Clinical Consultation &amp; OPD Hub</h4>
+            <p class="welcome-banner-desc">Manage patient diagnosis, view medical histories, and issue prescriptions with integrated pharmacy &amp; lab cascades.</p>
+          </div>
+
+          <!-- Stats -->
+          <div class="welcome-banner-stats">
+            <div class="stat-card">
+              <div class="stat-title">Today's Sessions</div>
+              <div class="stat-value" id="statToday">0</div>
+              <div class="text-xs text-primary mt-2 font-semibold">Consultation slots</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Upcoming Sessions</div>
+              <div class="stat-value" id="statUpcoming">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Next 7 days</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Booked Patients</div>
+              <div class="stat-value" id="statBooked">0</div>
+              <div class="text-xs text-success mt-2 font-semibold">Total active bookings</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Available Slots</div>
+              <div class="stat-value" id="statSlots">0</div>
+              <div class="text-xs text-muted mt-2 font-semibold">Remaining capacity</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming sessions list -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="font-bold">My Upcoming Sessions</h4>
+            <a href="../doctor/schedules.html" class="btn btn-secondary btn-sm">View All Schedules</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Session Title</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Booked</th>
+                  <th>Capacity</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsList">
+                <tr><td colspan="6" class="text-center text-muted py-4">Loading sessions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['doctor']);
+
+    const doctorMenu = [
+      { label: 'My Dashboard', path: '../doctor/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'My Schedules', path: '../doctor/schedules.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+      { label: 'My Patients', path: '../doctor/appointments.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' },
+      { label: 'My Leaves', path: '../doctor/leaves.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' },
+      { label: 'Prescriptions', path: '../doctor/prescription.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>' },
+      { label: 'My Profile', path: '../doctor/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(doctorMenu, '../doctor/dashboard.html', 'Doctor Console', 'Clinical Portal');
+    Utils.renderHeader('Doctor Dashboard');
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('docWelcome').innerText = `Welcome, Dr. ${user.name}`;
+      document.getElementById('docMeta').innerText = `${user.hospital_name || 'Hospital'} — Clinical Management Console`;
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await API.get('/schedules/my/');
+        const sessions = res.data || [];
+
+        const today = new Date().toISOString().split('T')[0];
+        const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+        const todaySessions = sessions.filter(s => s.schedule_date === today);
+        const upcomingSessions = sessions.filter(s => s.schedule_date >= today && s.schedule_date <= nextWeek);
+
+        const totalBooked = sessions.reduce((sum, s) => sum + (s.booked_count || 0), 0);
+        const totalSlots = sessions.reduce((sum, s) => sum + Math.max(0, (s.max_patients || 0) - (s.booked_count || 0)), 0);
+
+        document.getElementById('statToday').innerText = todaySessions.length;
+        document.getElementById('statUpcoming').innerText = upcomingSessions.length;
+        document.getElementById('statBooked').innerText = totalBooked;
+        document.getElementById('statSlots').innerText = totalSlots;
+
+        const tbody = document.getElementById('sessionsList');
+        if (sessions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No upcoming sessions. <a href="../doctor/schedules.html">Create one now</a>.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = sessions.slice(0, 5).map(s => {
+          const isFull = s.booked_count >= s.max_patients;
+          return `
+            <tr>
+              <td><strong>${s.title}</strong></td>
+              <td>${s.schedule_date}</td>
+              <td>${s.schedule_time}</td>
+              <td>${s.booked_count}</td>
+              <td>${s.max_patients}</td>
+              <td><span class="badge ${isFull ? 'badge-danger' : 'badge-success'}">${isFull ? 'Full' : 'Open'}</span></td>
+            </tr>`;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        const tbody = document.getElementById('sessionsList');
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No upcoming sessions. <a href="../doctor/schedules.html">Create one now</a>.</td></tr>`;
+        Utils.showToast('Failed to load dashboard data', 'danger');
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

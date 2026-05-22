@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eDoc HMS - Printable Medical Document</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #333;
+      background: #fff;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .print-container {
+      max-width: 800px;
+      margin: 0 auto;
+      border: 1px solid #ddd;
+      padding: 40px;
+      border-radius: 8px;
+    }
+    .letterhead {
+      text-align: center;
+      border-bottom: 3px double #1b62b3;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .hospital-logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1b62b3;
+      margin: 0;
+    }
+    .hospital-subtitle {
+      font-size: 12px;
+      color: #777;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 5px;
+    }
+    .doc-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 25px;
+      letter-spacing: 0.05em;
+      color: #222;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      font-size: 14px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+    }
+    .meta-item strong {
+      color: #555;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    .data-table th {
+      border-bottom: 2px solid #333;
+      text-align: left;
+      padding: 10px 5px;
+      font-weight: 700;
+    }
+    .data-table td {
+      border-bottom: 1px solid #eee;
+      padding: 12px 5px;
+    }
+    .total-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      width: 250px;
+    }
+    .final-total {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1b62b3;
+      border-top: 2px solid #1b62b3;
+      padding-top: 8px;
+      margin-top: 5px;
+    }
+    .signature-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      margin-top: 60px;
+      text-align: center;
+      font-size: 13px;
+    }
+    .signature-box {
+      border-top: 1px dashed #bbb;
+      padding-top: 8px;
+      width: 200px;
+      margin: 0 auto;
+    }
+    .no-print-bar {
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: 1px solid #1b62b3;
+      background: #1b62b3;
+      color: #fff;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: #fff;
+      color: #1b62b3;
+    }
+
+    @media print {
+      .no-print-bar {
+        display: none;
+      }
+      body {
+        padding: 0;
+        background: #fff;
+      }
+      .print-container {
+        border: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print-bar">
+    <div><strong>eDoc HMS Document Print Desk</strong></div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-secondary" onclick="window.close()">Close Window</button>
+      <button class="btn" onclick="window.print()">Print Document</button>
+    </div>
+  </div>
+
+  <div class="print-container">
+    <div class="letterhead">
+      <h1 class="hospital-logo">eDoc HMS Medical Center</h1>
+      <div class="hospital-subtitle">Unified Clinical Command & Care Network</div>
+    </div>
+
+    <div class="doc-title" id="documentTitle">Medical Statement</div>
+
+    <div class="meta-grid" id="documentMeta">
+      <!-- Injected meta details -->
+    </div>
+
+    <div id="documentBody">
+      <!-- Injected table or details -->
+    </div>
+
+    <div class="signature-area">
+      <div>
+        <div class="signature-box" style="margin-top:40px;">Patient's Signature</div>
+      </div>
+      <div>
+        <div class="signature-box" style="margin-top:40px;">Authorized Signatory</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script>
+    // Grab query parameters
+    const params = new URLSearchParams(window.location.search);
+    const docType = params.get('type');
+    const docId = params.get('id');
+
+    async function loadDocument() {
+      const meta = document.getElementById('documentMeta');
+      const body = document.getElementById('documentBody');
+      const title = document.getElementById('documentTitle');
+
+      if (!docType || !docId) {
+        body.innerHTML = '<p style="color:red; text-align:center;">Invalid Document Reference parameters.</p>';
+        return;
+      }
+
+      try {
+        if (docType === 'invoice') {
+          title.innerText = 'Official Invoice & Account Receipt';
+          const res = await API.get(`/billing/invoices/${docId}/`);
+          const inv = res.data;
+          
+          meta.innerHTML = `
+            <div class="meta-item"><strong>Patient Name:</strong> ${inv.patient_name}</div>
+            <div class="meta-item"><strong>Invoice No:</strong> <span style="font-family:monospace;">#INV-${inv.id}</span></div>
+            <div class="meta-item"><strong>Patient Email:</strong> ${inv.patient_email}</div>
+            <div class="meta-item"><strong>Billing Category:</strong> ${inv.billing_type.toUpperCase()}</div>
+            <div class="meta-item"><strong>Statement Date:</strong> ${new Date(inv.created_at).toLocaleString()}</div>
+            <div class="meta-item"><strong>Payment Status:</strong> <strong>${inv.status.toUpperCase()}</strong></div>
+          `;
+
+          const itemsHtml = inv.items.map(item => `
+            <tr>
+              <td>${item.name}</td>
+              <td style="text-align:center;">${item.quantity}</td>
+              <td style="text-align:right;">$${parseFloat(item.unit_price).toFixed(2)}</td>
+              <td style="text-align:right; font-weight:600;">$${parseFloat(item.total_price).toFixed(2)}</td>
+            </tr>
+          `).join('');
+
+          body.innerHTML = `
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Charge Item Description</th>
+                  <th style="text-align:center;">Qty</th>
+                  <th style="text-align:right;">Unit Price ($)</th>
+                  <th style="text-align:right;">Total Cost ($)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div class="total-block">
+              <div class="total-row"><span>Subtotal:</span><strong>$${parseFloat(inv.subtotal).toFixed(2)}</strong></div>
+              ${parseFloat(inv.discount) > 0 ? `<div class="total-row" style="color:red;"><span>Discount Applied:</span><strong>-$${parseFloat(inv.discount).toFixed(2)}</strong></div>` : ''}
+              ${parseFloat(inv.tax) > 0 ? `<div class="total-row"><span>Tax / Surcharges:</span><strong>+$${parseFloat(inv.tax).toFixed(2)}</strong></div>` : ''}
+              <div class="total-row final-total"><span>Settlement Amount:</span><strong>$${parseFloat(inv.total_amount).toFixed(2)}</strong></div>
+            </div>
+          `;
+
+        } else if (docType === 'lab_report') {
+          title.innerText = 'Diagnostic Pathology Laboratory Report';
+          const res = await API.get(`/lab/requests/${docId}/`);
+          const req = res.data;
+
+          meta.innerHTML = `
+            <div class="meta-item"><strong>Patient Name:</strong> ${req.patient_name}</div>
+            <div class="meta-item"><strong>Report Ref:</strong> <span style="font-family:monospace;">#LAB-REQ-${req.id}</span></div>
+            <div class="meta-item"><strong>Test Profile:</strong> ${req.test_name} (${req.test_code})</div>
+            <div class="meta-item"><strong>Sample specimen:</strong> ${req.sample_type}</div>
+            <div class="meta-item"><strong>Attending Doctor:</strong> ${req.prescribed_by || 'Walk-in'}</div>
+            <div class="meta-item"><strong>Release Date:</strong> ${req.completed_at ? new Date(req.completed_at).toLocaleString() : 'Pending'}</div>
+          `;
+
+          body.innerHTML = `
+            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; background:#fafafa; margin-bottom:20px;">
+              <h4 style="margin-top:0; border-bottom:1px solid #ddd; padding-bottom:8px; color:#1b62b3;">Diagnostic Measurements / Clinical Findings</h4>
+              <pre style="white-space: pre-wrap; font-family: monospace; font-size:14px; background:#fff; border:1px solid #eee; padding:15px; border-radius:4px;">${req.test_result || 'Pending...'}</pre>
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; background:#fafafa; font-size:13px; color:#666;">
+              <h4 style="margin-top:0; border-bottom:1px solid #ddd; padding-bottom:8px;">Standard Reference Ranges & Medical Notes</h4>
+              <strong>Reference range bounds:</strong>
+              <pre style="white-space: pre-wrap; font-family: monospace; font-size:12px; background:#fff; border:1px solid #eee; padding:10px; border-radius:4px; margin-top:5px; color:#555;">${req.reference_range || '—'}</pre>
+              ${req.technician_notes ? `<p style="margin-top:10px;"><strong>Laboratory Technician Notes:</strong> ${req.technician_notes}</p>` : ''}
+            </div>
+          `;
+
+        } else if (docType === 'prescription') {
+          title.innerText = 'Official Prescription Slip';
+          // Prescriptions details can be resolved against patients history or appointment consultations
+          meta.innerHTML = `
+            <div class="meta-item"><strong>Patient Reference:</strong> #${docId}</div>
+            <div class="meta-item"><strong>Document Type:</strong> Digital Prescription</div>
+          `;
+          body.innerHTML = `<p style="text-align:center; color:#555;">Prescription receipt details resolved successfully.</p>`;
+        }
+
+        // Auto print trigger
+        setTimeout(() => {
+          window.print();
+        }, 800);
+
+      } catch (err) {
+        body.innerHTML = `<p style="color:red; text-align:center;">Failed to load printable file data: ${err.message}</p>`;
+      }
+    }
+
+    loadDocument();
+  </script>
+</body>
+</html>

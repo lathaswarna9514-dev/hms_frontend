@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/admin.css">
+    <title>Patients Directory</title>
+    <style>
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td width="40%">
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">Patients Directory</p>
+                    </td>
+                    <td width="30%">
+                        <form id="searchForm" style="display: flex;">
+                            <input type="search" id="patientSearch" class="input-text header-searchbar" placeholder="Search Patient name or Email" style="width: 100%;">
+                            <input type="submit" value="Search" class="login-btn btn-primary btn" style="margin-left: 10px; margin-top:0;">
+                        </form>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div class="abc" style="width: 93%; height: 500px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff; margin-top: 10px;">
+                <table width="100%" class="sub-table" border="0" id="patients-table">
+                    <thead>
+                        <tr>
+                            <th class="table-headin">Patient Name</th>
+                            <th class="table-headin">Email</th>
+                            <th class="table-headin">Telephone</th>
+                            <th class="table-headin">Date of Birth</th>
+                            <th class="table-headin">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading patients...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div id="viewModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 40%; margin: 0; animation: transitionIn-Y-bottom 0.3s;">
+            <h2>Patient Details</h2>
+            <a class="close" href="#" id="closeModal">&times;</a>
+            <div class="content" style="max-height: 400px; overflow-y: auto;">
+                <table width="100%" border="0" style="margin-top: 20px; line-height: 2;">
+                    <tr>
+                        <td width="30%" style="font-weight: 600;">Full Name:</td>
+                        <td id="modal-name">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Email:</td>
+                        <td id="modal-email">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">NIC:</td>
+                        <td id="modal-nic">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Telephone:</td>
+                        <td id="modal-telephone">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Address:</td>
+                        <td id="modal-address">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Date of Birth:</td>
+                        <td id="modal-dob">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('patients');
+
+        const tableBody = document.querySelector('#patients-table tbody');
+        const searchForm = document.getElementById('searchForm');
+        const viewModal = document.getElementById('viewModal');
+
+        async function loadPatients(search = '') {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading patients...</td></tr>`;
+            try {
+                const res = await ApiService.patients.getAll(search);
+                tableBody.innerHTML = '';
+                if (res.data.length > 0) {
+                    res.data.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 15px; font-weight: 600;">${p.name}</td>
+                            <td style="padding: 15px;">${p.email}</td>
+                            <td style="padding: 15px; text-align: center;">${p.telephone || 'N/A'}</td>
+                            <td style="padding: 15px; text-align: center;">${p.dob || 'N/A'}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <button class="btn btn-primary-soft btn-view" data-id="${p.id}" style="padding: 5px 12px; font-size:12px;">View profile</button>
+                                <button class="btn btn-primary btn-delete" data-id="${p.id}" style="padding: 5px 12px; font-size:12px; margin-left: 5px; background-color: rgba(255, 62, 62, 0.1); color: rgb(255, 62, 62); border: none;">Remove</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+
+                    // Handlers
+                    document.querySelectorAll('.btn-view').forEach(btn => {
+                        btn.addEventListener('click', (e) => viewPatient(e.target.getAttribute('data-id')));
+                    });
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', (e) => removePatient(e.target.getAttribute('data-id')));
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;">No patients found.</td></tr>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function viewPatient(id) {
+            try {
+                const res = await ApiService.patients.get(id);
+                const p = res.data;
+
+                document.getElementById('modal-name').textContent = p.name;
+                document.getElementById('modal-email').textContent = p.email;
+                document.getElementById('modal-nic').textContent = p.nic || 'N/A';
+                document.getElementById('modal-telephone').textContent = p.telephone || 'N/A';
+                document.getElementById('modal-address').textContent = p.address || 'N/A';
+                document.getElementById('modal-dob').textContent = p.dob || 'N/A';
+
+                viewModal.style.display = 'flex';
+            } catch (err) {
+                alert('Error loading patient details.');
+            }
+        }
+
+        async function removePatient(id) {
+            if (confirm('Are you sure you want to delete this patient account? All their booked appointments will be deleted too.')) {
+                try {
+                    await ApiService.patients.deletePatientAdmin(id);
+                    alert('Patient account removed.');
+                    loadPatients();
+                } catch (err) {
+                    alert(err.message || 'Failed to delete patient account.');
+                }
+            }
+        }
+
+        // Close Modal
+        document.getElementById('closeModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            viewModal.style.display = 'none';
+        });
+
+        // Search submit
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loadPatients(document.getElementById('patientSearch').value.trim());
+        });
+
+        // Init
+        loadPatients();
+    </script>
+
+    <script src="../assets/js/utils.js"></script>
+</body>
+</html>

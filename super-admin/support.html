@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Support Desk - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="font-bold">Global Support Tickets Queue</h2>
+            <p class="text-muted mt-1">Audit customer/staff queries, reply to operational issues, and update resolution statuses.</p>
+          </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="stat-card" style="border-left:4px solid var(--warning);">
+            <div class="stat-title">Pending Tickets</div>
+            <div class="stat-value text-warning" id="pendingCount">0</div>
+            <div class="text-xs text-muted mt-1">Awaiting administrative reply</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid var(--success);">
+            <div class="stat-title">Resolved Tickets</div>
+            <div class="stat-value text-success" id="resolvedCount">0</div>
+            <div class="text-xs text-success mt-1">Solved & email dispatched</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid var(--primary);">
+            <div class="stat-title">Total Platform Queries</div>
+            <div class="stat-value text-primary" id="totalCount">0</div>
+            <div class="text-xs text-muted mt-1">Platform wide gross queries</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex gap-3 mb-5" style="flex-wrap:wrap;">
+          <input type="text" id="tktSearch" class="form-input" placeholder="Search subject or email..." style="max-width:320px;" oninput="debounceSearch()">
+          <select id="tktStatus" class="form-input" style="max-width:180px;" onchange="loadTickets()">
+            <option value="">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="in-progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <button class="btn btn-secondary" onclick="clearFilters()">Reset</button>
+        </div>
+
+        <!-- Tickets List -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Ticket #</th>
+                  <th>Hospital Node</th>
+                  <th>Issuer Name</th>
+                  <th>Subject</th>
+                  <th>Issued Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ticketTableBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Checking support queues...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Ticket View details Modal -->
+  <div id="ticketModal" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h4 class="font-bold" id="ticketModalTitle">Support Inquiry Details</h4>
+        <button class="btn btn-sm" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="ticketModalBody" style="line-height:1.6;">
+        <p class="text-muted">Loading query details...</p>
+      </div>
+      <div class="modal-footer flex justify-between">
+        <div class="flex gap-2">
+          <button class="btn btn-warning btn-sm" onclick="changeStatus('in-progress')">Mark In Progress</button>
+          <button class="btn btn-success btn-sm" onclick="changeStatus('resolved')">Mark Resolved</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['super-admin']);
+
+    const saMenu = [
+      { label: 'Platform Overview', path: '../super-admin/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Hospital Registry', path: '../super-admin/hospitals.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' },
+      { label: 'Platform Support', path: '../super-admin/support.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+      { label: 'My Profile', path: '../super-admin/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(saMenu, '../super-admin/support.html', 'eDoc Cloud', 'Super Admin');
+    Utils.renderHeader('Platform Support Desk');
+
+    let debounceTimeout;
+    let ticketsList = [];
+    let selectedTicketId = null;
+
+    async function loadTickets() {
+      const search = document.getElementById('tktSearch').value.trim();
+      const statusVal = document.getElementById('tktStatus').value;
+
+      try {
+        const res = await API.get('/support/tickets/');
+        let list = res.data || [];
+
+        // Apply local filtering for responsive search
+        if (search) {
+          const lower = search.toLowerCase();
+          list = list.filter(t => t.subject.toLowerCase().includes(lower) || t.email.toLowerCase().includes(lower));
+        }
+        if (statusVal) {
+          list = list.filter(t => t.status === statusVal);
+        }
+
+        ticketsList = list;
+
+        // Calc counts
+        let pending = 0;
+        let resolved = 0;
+        list.forEach(t => {
+          if (t.status === 'resolved') resolved++;
+          else pending++;
+        });
+
+        document.getElementById('pendingCount').innerText = pending;
+        document.getElementById('resolvedCount').innerText = resolved;
+        document.getElementById('totalCount').innerText = list.length;
+
+        renderTable(list);
+      } catch (err) {
+        Utils.showToast('Failed to load tickets', 'danger');
+      }
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('ticketTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No support inquiries found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(t => {
+        const issuedDate = new Date(t.created_at).toLocaleDateString();
+        const badgeClass = t.status === 'resolved' ? 'badge-success' : t.status === 'in-progress' ? 'badge-warning' : 'badge-danger';
+        const hospitalName = t.hospital_name || 'Global Platform';
+
+        return `
+          <tr>
+            <td><span class="badge badge-secondary font-mono">#TKT-${t.id}</span></td>
+            <td><strong>${hospitalName}</strong></td>
+            <td><strong>${t.name}</strong><br><span class="text-xs text-muted">${t.email}</span></td>
+            <td><strong>${t.subject}</strong></td>
+            <td>${issuedDate}</td>
+            <td><span class="badge ${badgeClass}">${t.status.toUpperCase()}</span></td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="viewTicket(${t.id})">Details / Action</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function debounceSearch() {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(loadTickets, 350);
+    }
+
+    function clearFilters() {
+      document.getElementById('tktSearch').value = '';
+      document.getElementById('tktStatus').value = '';
+      loadTickets();
+    }
+
+    function viewTicket(id) {
+      selectedTicketId = id;
+      const t = ticketsList.find(x => x.id === id);
+      if (!t) return;
+
+      document.getElementById('ticketModalTitle').innerText = `Ticket Ref: #TKT-${t.id}`;
+      document.getElementById('ticketModalBody').innerHTML = `
+        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:1rem; background:var(--background); margin-bottom:1rem;">
+          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem;">From: <strong>${t.name}</strong> (${t.email})</div>
+          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem;">Hospital Node: <strong>${t.hospital_name || 'Global Platform'}</strong></div>
+          <h4 style="margin: 0.5rem 0;" class="font-bold">${t.subject}</h4>
+          <p style="margin-top:0.75rem; white-space:pre-wrap; font-size:0.9rem;">${t.message}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span>Current status:</span>
+          <span class="badge ${t.status === 'resolved' ? 'badge-success' : t.status === 'in-progress' ? 'badge-warning' : 'badge-danger'}">${t.status.toUpperCase()}</span>
+        </div>
+      `;
+
+      document.getElementById('ticketModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('ticketModal').classList.remove('active');
+    }
+
+    async function changeStatus(newStatus) {
+      if (!selectedTicketId) return;
+
+      try {
+        await API.patch(`/support/tickets/${selectedTicketId}/`, { status: newStatus });
+        Utils.showToast(`Ticket status updated to ${newStatus.toUpperCase()}`, 'success');
+        closeModal();
+        loadTickets();
+      } catch (err) {
+        Utils.showToast(err.message || 'Status update failed', 'danger');
+      }
+    }
+
+    loadTickets();
+  </script>
+</body>
+</html>

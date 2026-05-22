@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/patient.css">
+    <title>My Patients Directory</title>
+    <style>
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td>
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">My Patients Directory</p>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div class="abc" style="width: 93%; height: 500px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff; margin-top: 10px;">
+                <table width="100%" class="sub-table" border="0" id="patients-table">
+                    <thead>
+                        <tr>
+                            <th class="table-headin">Patient Name</th>
+                            <th class="table-headin">Email</th>
+                            <th class="table-headin">Telephone</th>
+                            <th class="table-headin">Date of Birth</th>
+                            <th class="table-headin">Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading patient directory...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('patients');
+
+        const tableBody = document.querySelector('#patients-table tbody');
+
+        async function loadPatients() {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading patients...</td></tr>`;
+            try {
+                // Get doctor appointments to find unique patients
+                const res = await ApiService.appointments.getDoctorAppointments();
+                tableBody.innerHTML = '';
+                
+                // Extract unique patient records
+                const patientsMap = new Map();
+                res.data.forEach(appt => {
+                    if (!patientsMap.has(appt.patient_email)) {
+                        patientsMap.set(appt.patient_email, {
+                            name: appt.patient_name,
+                            email: appt.patient_email,
+                            telephone: appt.patient_telephone,
+                            dob: appt.patient_dob,
+                            address: appt.patient_address
+                        });
+                    }
+                });
+
+                if (patientsMap.size > 0) {
+                    patientsMap.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 15px; font-weight: 600;">${p.name}</td>
+                            <td style="padding: 15px;">${p.email}</td>
+                            <td style="padding: 15px; text-align: center;">${p.telephone || 'N/A'}</td>
+                            <td style="padding: 15px; text-align: center;">${p.dob || 'N/A'}</td>
+                            <td style="padding: 15px;">${p.address || 'N/A'}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;">No patients have booked appointments with you yet.</td></tr>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Init
+        loadPatients();
+    </script>
+</body>
+</html>

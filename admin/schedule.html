@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/animations.css">  
+    <link rel="stylesheet" href="../css/main.css">  
+    <link rel="stylesheet" href="../css/admin.css">
+    <title>Schedule Sessions Management</title>
+    <style>
+        .sub-table{
+            animation: transitionIn-Y-bottom 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="sidebar-container"></div>
+        <div class="dash-body">
+            <div id="header-container"></div>
+
+            <table border="0" width="93%" class="filter-container" style="border: none; margin-left: 20px;">
+                <tr>
+                    <td width="30%">
+                        <p style="font-size: 20px; font-weight: 600; padding-left: 12px;">Schedule Sessions</p>
+                    </td>
+                    <td width="30%">
+                        <form id="searchForm" style="display: flex;">
+                            <input type="search" id="sessionSearch" class="input-text header-searchbar" placeholder="Search Session title or Doctor" style="width: 100%;">
+                            <input type="submit" value="Search" class="login-btn btn-primary btn" style="margin-left: 10px; margin-top:0;">
+                        </form>
+                    </td>
+                    <td width="20%" style="text-align: right;">
+                        <button class="btn btn-primary" id="addNewBtn" style="padding: 10px 20px;">+ Add Session</button>
+                    </td>
+                </tr>
+            </table>
+
+            <center>
+            <div class="abc" style="width: 93%; height: 500px; border: 1px solid #ebebeb; border-radius: 8px; background: #fff; margin-top: 10px;">
+                <table width="100%" class="sub-table" border="0" id="sessions-table">
+                    <thead>
+                        <tr>
+                            <th class="table-headin">Session Title</th>
+                            <th class="table-headin">Doctor</th>
+                            <th class="table-headin">Scheduled Date & Time</th>
+                            <th class="table-headin">Max Patients</th>
+                            <th class="table-headin">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </center>
+        </div>
+    </div>
+
+    <!-- Add Session Modal -->
+    <div id="sessionModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 45%; margin: 0; animation: transitionIn-Y-bottom 0.3s;">
+            <h2>Schedule a Session</h2>
+            <a class="close" href="#" id="closeModal">&times;</a>
+            <div class="content" style="max-height: 450px; overflow-y: auto;">
+                <form id="sessionForm">
+                    <table width="100%" border="0" style="border-spacing: 0 12px;">
+                        <tr>
+                            <td width="30%" style="font-weight:600;">Session Title:</td>
+                            <td>
+                                <input type="text" id="schTitle" class="input-text" placeholder="Session Title" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:600;">Doctor:</td>
+                            <td>
+                                <select id="schDoctor" class="box" style="width:100%; height:40px;" required>
+                                    <option value="">Select Doctor</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:600;">Date:</td>
+                            <td>
+                                <input type="date" id="schDate" class="input-text" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:600;">Time:</td>
+                            <td>
+                                <input type="time" id="schTime" class="input-text" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:600;">Max Bookings:</td>
+                            <td>
+                                <input type="number" id="schMax" class="input-text" min="1" value="50" required>
+                            </td>
+                        </tr>
+                    </table>
+                    <br>
+                    <div id="modalError" style="color: rgb(255, 62, 62); text-align: center; font-size: 14px; margin-bottom: 15px;"></div>
+                    <div style="text-align: right;">
+                        <input type="submit" value="Add Session" class="btn btn-primary" style="padding: 10px 25px;">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Session Details & Bookings Modal -->
+    <div id="viewModal" class="overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="popup" style="width: 50%; margin: 0; animation: transitionIn-Y-bottom 0.3s;">
+            <h2>Session Details & Bookings</h2>
+            <a class="close" href="#" id="closeViewModal">&times;</a>
+            <div class="content" style="max-height: 400px; overflow-y: auto;">
+                <table width="100%" border="0" style="line-height: 2;">
+                    <tr>
+                        <td width="30%" style="font-weight: 600;">Title:</td>
+                        <td id="view-title">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Doctor:</td>
+                        <td id="view-doctor">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Scheduled Date:</td>
+                        <td id="view-date">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">Time:</td>
+                        <td id="view-time">-</td>
+                    </tr>
+                </table>
+                <br>
+                <p style="font-weight: 600; margin-bottom: 5px;">Booked Patients list:</p>
+                <div style="border: 1px solid #ebebeb; border-radius: 6px; overflow: hidden; background: #fafafa;">
+                    <table width="100%" border="0" id="bookings-list-table">
+                        <thead style="background: #eee;">
+                            <tr>
+                                <th style="padding: 8px;">Appt No.</th>
+                                <th style="padding: 8px;">Patient Name</th>
+                                <th style="padding: 8px;">Telephone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 20px; color: #777;">No patients booked yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ApiService } from '../services/api.js';
+        import { initNavigation } from './navigation.js';
+
+        initNavigation('schedule');
+
+        const tableBody = document.querySelector('#sessions-table tbody');
+        const searchForm = document.getElementById('searchForm');
+        const sessionModal = document.getElementById('sessionModal');
+        const sessionForm = document.getElementById('sessionForm');
+        const doctorSelect = document.getElementById('schDoctor');
+        const viewModal = document.getElementById('viewModal');
+
+        async function loadDoctors() {
+            try {
+                const res = await ApiService.doctors.getAll();
+                doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+                res.data.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.textContent = `Dr. ${doc.name} (${doc.specialty_name || 'General'})`;
+                    doctorSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadSessions(search = '') {
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #777;">Loading sessions...</td></tr>`;
+            try {
+                const res = await ApiService.schedules.getAll({ search });
+                tableBody.innerHTML = '';
+                if (res.data.length > 0) {
+                    res.data.forEach(sess => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 15px; font-weight: 600;">${sess.title}</td>
+                            <td style="padding: 15px;">Dr. ${sess.doctor_name}</td>
+                            <td style="padding: 15px; text-align: center;">${sess.schedule_date} @ ${sess.schedule_time}</td>
+                            <td style="padding: 15px; text-align: center;">${sess.booked_count} / ${sess.max_patients}</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <button class="btn btn-primary-soft btn-view" data-id="${sess.id}" style="padding: 5px 12px; font-size:12px;">View Bookings</button>
+                                <button class="btn btn-primary btn-delete" data-id="${sess.id}" style="padding: 5px 12px; font-size:12px; margin-left: 5px; background-color: rgba(255, 62, 62, 0.1); color: rgb(255, 62, 62); border: none;">Remove</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+
+                    // Handlers
+                    document.querySelectorAll('.btn-view').forEach(btn => {
+                        btn.addEventListener('click', (e) => viewSession(e.target.getAttribute('data-id')));
+                    });
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', (e) => deleteSession(e.target.getAttribute('data-id')));
+                    });
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;">No sessions scheduled.</td></tr>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function viewSession(id) {
+            try {
+                const res = await ApiService.schedules.get(id);
+                const data = res.data;
+
+                document.getElementById('view-title').textContent = data.title;
+                document.getElementById('view-doctor').textContent = `Dr. ${data.doctor_name}`;
+                document.getElementById('view-date').textContent = data.schedule_date;
+                document.getElementById('view-time').textContent = data.schedule_time;
+
+                const bookingsBody = document.querySelector('#bookings-list-table tbody');
+                bookingsBody.innerHTML = '';
+
+                if (data.booked_patients && data.booked_patients.length > 0) {
+                    data.booked_patients.forEach(appt => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="padding: 8px; text-align: center;">#${appt.appointment_number}</td>
+                            <td style="padding: 8px; font-weight:600;">${appt.patient_name}</td>
+                            <td style="padding: 8px; text-align: center;">${appt.patient_telephone || 'N/A'}</td>
+                        `;
+                        bookingsBody.appendChild(tr);
+                    });
+                } else {
+                    bookingsBody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #999;">No patients booked yet.</td></tr>`;
+                }
+
+                viewModal.style.display = 'flex';
+            } catch (err) {
+                alert('Error loading session bookings.');
+            }
+        }
+
+        async function deleteSession(id) {
+            if (confirm('Are you sure you want to delete this session? This will cancel all appointments booked in it.')) {
+                try {
+                    await ApiService.schedules.delete(id);
+                    alert('Session cancelled.');
+                    loadSessions();
+                } catch (err) {
+                    alert(err.message || 'Failed to remove session.');
+                }
+            }
+        }
+
+        // Add Session Modal Trigger
+        document.getElementById('addNewBtn').addEventListener('click', () => {
+            sessionForm.reset();
+            document.getElementById('modalError').textContent = '';
+            
+            // Set min date to today
+            document.getElementById('schDate').min = new Date().toISOString().split('T')[0];
+            
+            sessionModal.style.display = 'flex';
+        });
+
+        // Form Submit
+        sessionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorDiv = document.getElementById('modalError');
+            errorDiv.textContent = '';
+
+            const title = document.getElementById('schTitle').value.trim();
+            const doctor = document.getElementById('schDoctor').value;
+            const schedule_date = document.getElementById('schDate').value;
+            const schedule_time = document.getElementById('schTime').value;
+            const max_patients = document.getElementById('schMax').value;
+
+            try {
+                await ApiService.schedules.create({ title, doctor, schedule_date, schedule_time, max_patients });
+                alert('Session scheduled successfully.');
+                sessionModal.style.display = 'none';
+                loadSessions();
+            } catch (err) {
+                console.error(err);
+                if (err.errors) {
+                    const keys = Object.keys(err.errors);
+                    if (keys.length > 0) {
+                        errorDiv.textContent = `${keys[0]}: ${err.errors[keys[0]]}`;
+                        return;
+                    }
+                }
+                errorDiv.textContent = err.message || 'Failed to schedule session.';
+            }
+        });
+
+        // Close Modals
+        document.getElementById('closeModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionModal.style.display = 'none';
+        });
+        document.getElementById('closeViewModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            viewModal.style.display = 'none';
+        });
+
+        // Search submit
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loadSessions(document.getElementById('sessionSearch').value.trim());
+        });
+
+        // Init
+        loadDoctors();
+        loadSessions();
+    </script>
+
+    <script src="../assets/js/utils.js"></script>
+</body>
+</html>

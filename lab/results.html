@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result Sheets - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="font-bold">Diagnostics Results Entry</h2>
+            <p class="text-muted mt-1">Submit laboratory results metrics and release clinical reports.</p>
+          </div>
+          <!-- Filter Tabs -->
+          <div class="flex gap-2">
+            <button class="btn btn-secondary btn-sm active" id="tabCollected" onclick="filterStatus('collected')">Collected (Pending Entry)</button>
+            <button class="btn btn-secondary btn-sm" id="tabCompleted" onclick="filterStatus('completed')">Completed Reports</button>
+          </div>
+        </div>
+
+        <!-- Requests List -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Req # / Barcode</th>
+                  <th>Patient</th>
+                  <th>Diagnostic Test</th>
+                  <th>Specimen</th>
+                  <th>Requested Date</th>
+                  <th>Report Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="analysisTableBody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Checking active samples queue...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Enter Results Modal -->
+  <div id="resultsModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Log Test Findings</h4>
+        <button class="btn btn-sm" onclick="closeResultsModal()">&times;</button>
+      </div>
+      <form id="resultsForm" onsubmit="submitResults(event)">
+        <input type="hidden" id="resReqId">
+        <div class="modal-body">
+          <div class="grid grid-cols-2 gap-4 mb-4" style="background:var(--bg-secondary); padding:1rem; border-radius:var(--radius); border:1px solid var(--border);">
+            <div>
+              <span class="text-xs text-muted font-bold">Patient Name:</span>
+              <div class="font-semibold" id="lblResPatient">—</div>
+            </div>
+            <div>
+              <span class="text-xs text-muted font-bold">Test Profile:</span>
+              <div class="font-semibold" id="lblResTest">—</div>
+            </div>
+            <div class="col-span-2">
+              <span class="text-xs text-muted font-bold">Standard Reference Ranges:</span>
+              <pre class="font-mono text-xs mt-1" style="background:#fff; padding:.5rem; border-radius:var(--radius); border:1px solid var(--border); max-height:80px; overflow-y:auto;" id="lblResRanges">—</pre>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="resInput">Test Findings / Metrics Values</label>
+            <textarea id="resInput" class="form-input font-mono" rows="6" placeholder="Enter findings values here... (e.g. Hemoglobin: 14.2 g/dL)" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notesInput">Technician Observations / Notes</label>
+            <textarea id="notesInput" class="form-input" rows="2" placeholder="Describe any abnormality, specimen quality issues..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer flex justify-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="closeResultsModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Release Test Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Report Modal -->
+  <div id="viewReportModal" class="modal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <h4 class="font-bold">Laboratory Report</h4>
+        <button class="btn btn-sm" onclick="closeViewReportModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="viewReportBody">
+        <p class="text-muted">Loading report...</p>
+      </div>
+      <div class="modal-footer flex justify-end">
+        <button class="btn btn-secondary" onclick="closeViewReportModal()">Close</button>
+        <button class="btn btn-primary" onclick="window.print()">Print Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['lab', 'doctor']);
+
+    const labMenu = [
+      { label: 'Dashboard', path: '../lab/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
+      { label: 'Test Catalog', path: '../lab/tests.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+      { label: 'Sample Logs', path: '../lab/samples.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>' },
+      { label: 'Result Sheets', path: '../lab/results.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+      { label: 'My Profile', path: '../lab/profile.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+    ];
+
+    Utils.renderSidebar(labMenu, '../lab/results.html', 'Diagnostic Lab', 'Department Console');
+    Utils.renderHeader('Result Sheets');
+
+    let currentFilter = 'collected';
+
+    function filterStatus(status) {
+      currentFilter = status;
+      document.getElementById('tabCollected').classList.remove('active');
+      document.getElementById('tabCompleted').classList.remove('active');
+      if (status === 'collected') document.getElementById('tabCollected').classList.add('active');
+      else document.getElementById('tabCompleted').classList.add('active');
+      loadQueue();
+    }
+
+    async function loadQueue() {
+      try {
+        const res = await API.get(`/lab/requests/?status=${currentFilter}`);
+        const list = res.data.results || res.data || [];
+        renderTable(list);
+
+        // Pre-select from URL deep-link
+        const urlParams = new URLSearchParams(window.location.search);
+        const reqId = urlParams.get('request');
+        if (reqId && currentFilter === 'collected') {
+          const match = list.find(r => r.id == reqId);
+          if (match) openResultsModal(match);
+        }
+      } catch (err) {
+        Utils.showToast('Failed to load lab request queue', 'danger');
+      }
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('analysisTableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No requests found in this status queue.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(r => {
+        let actionBtn = '';
+        if (r.status === 'collected') {
+          actionBtn = `<button class="btn btn-primary btn-sm" onclick='openResultsModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'>Log Findings</button>`;
+        } else if (r.status === 'completed') {
+          actionBtn = `<button class="btn btn-secondary btn-sm" onclick="viewReport(${r.id})">Print Report</button>`;
+        }
+
+        const dateStr = r.requested_at ? r.requested_at.split('T')[0] : '—';
+        const badgeClass = r.status === 'collected' ? 'badge-warning' : 'badge-success';
+        const statusLabel = r.status === 'collected' ? 'Processing' : 'Released';
+
+        return `
+          <tr>
+            <td>
+              <span class="font-mono text-sm">#${r.id}</span><br>
+              <span class="font-mono text-xs text-muted">${r.sample_barcode || 'NO BARCODE'}</span>
+            </td>
+            <td><strong>${r.patient_name}</strong></td>
+            <td>${r.test_name} (${r.test_code})</td>
+            <td>${r.sample_type}</td>
+            <td><span class="text-xs">${dateStr}</span></td>
+            <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+            <td>${actionBtn}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Logging Results Modal
+    async function openResultsModal(r) {
+      document.getElementById('resReqId').value = r.id;
+      document.getElementById('lblResPatient').innerText = r.patient_name;
+      document.getElementById('lblResTest').innerText = `${r.test_name} (${r.test_code})`;
+      document.getElementById('resInput').value = '';
+      document.getElementById('notesInput').value = '';
+
+      // Get detail to display reference range
+      try {
+        const detail = await API.get(`/lab/requests/${r.id}/`);
+        document.getElementById('lblResRanges').innerText = detail.data.reference_range || 'No reference limits defined.';
+      } catch (err) {
+        document.getElementById('lblResRanges').innerText = 'Error loading reference limits.';
+      }
+
+      document.getElementById('resultsModal').classList.add('active');
+    }
+
+    function closeResultsModal() {
+      document.getElementById('resultsModal').classList.remove('active');
+    }
+
+    async function submitResults(e) {
+      e.preventDefault();
+      const reqId = document.getElementById('resReqId').value;
+      const payload = {
+        test_result: document.getElementById('resInput').value,
+        technician_notes: document.getElementById('notesInput').value
+      };
+
+      try {
+        await API.post(`/lab/requests/${reqId}/submit-results/`, payload);
+        Utils.showToast('Test report findings released successfully', 'success');
+        closeResultsModal();
+        loadQueue();
+      } catch (err) {
+        Utils.showToast(err.message || 'Log findings failed', 'danger');
+      }
+    }
+
+    // View Report Dialog
+    async function viewReport(id) {
+      document.getElementById('viewReportModal').classList.add('active');
+      const body = document.getElementById('viewReportBody');
+      body.innerHTML = '<p class="text-muted">Loading released lab report...</p>';
+
+      try {
+        const res = await API.get(`/lab/requests/${id}/`);
+        const r = res.data;
+        const compDate = r.completed_at ? new Date(r.completed_at).toLocaleString() : '—';
+        const collectDate = r.sample_collected_at ? new Date(r.sample_collected_at).toLocaleString() : '—';
+
+        body.innerHTML = `
+          <div style="border: 2px solid var(--border); padding: 1.5rem; border-radius: var(--radius); line-height: 1.6;">
+            <div style="text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 1rem;">
+              <h3 style="margin: 0; color: var(--primary);">eDoc Diagnostics</h3>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Diagnostic Pathology Laboratory</span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; font-size: 0.85rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+              <div><strong>Patient Name:</strong> ${r.patient_name}</div>
+              <div><strong>Requested Test:</strong> ${r.test_name} (${r.test_code})</div>
+              <div><strong>Sample ID:</strong> <span class="font-mono">${r.sample_barcode}</span></div>
+              <div><strong>Sample Collected:</strong> ${collectDate}</div>
+              <div><strong>Doctor Prescribed:</strong> ${r.prescribed_by || 'Walk-in'}</div>
+              <div><strong>Report Released:</strong> ${compDate}</div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="margin: 0 0 .5rem 0; border-bottom: 1px solid var(--border); padding-bottom: .25rem; color: var(--primary);">Test Results & Measurements</h5>
+              <pre style="margin: 0; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; background: var(--bg-secondary); padding: 0.75rem; border-radius: var(--radius); border: 1px solid var(--border);">${r.test_result}</pre>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="margin: 0 0 .5rem 0; border-bottom: 1px solid var(--border); padding-bottom: .25rem; color: var(--primary);">Standard Reference Limits</h5>
+              <pre style="margin: 0; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; color: var(--text-muted);">${r.reference_range}</pre>
+            </div>
+
+            ${r.technician_notes ? `
+            <div>
+              <h5 style="margin: 0 0 .5rem 0; border-bottom: 1px solid var(--border); padding-bottom: .25rem; color: var(--primary);">Technician Comments</h5>
+              <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); font-style: italic;">${r.technician_notes}</p>
+            </div>` : ''}
+          </div>`;
+      } catch (err) {
+        body.innerHTML = '<p class="text-danger">Failed to retrieve diagnostic report.</p>';
+      }
+    }
+
+    function closeViewReportModal() {
+      document.getElementById('viewReportModal').classList.remove('active');
+    }
+
+    loadQueue();
+  </script>
+</body>
+</html>
