@@ -38,7 +38,8 @@
                 <tr><td colspan="6" class="text-center text-muted py-4">Checking active testing requests...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -95,11 +96,16 @@
     Utils.renderSidebar(labMenu, '../lab/samples.html', 'Diagnostic Lab', 'Department Console');
     Utils.renderHeader('Sample Logs');
 
-    async function loadRequests() {
+    let currentPage = 1;
+
+    async function loadRequests(page = 1) {
       try {
-        const res = await API.get('/lab/requests/?status=pending');
-        const list = res.data.results || res.data || [];
+        currentPage = page;
+        const res = await API.get(`/lab/requests/?status=pending&page=${page}`);
+        const count = res.data.count !== undefined ? res.data.count : (res.data.results ? res.data.results.length : (res.data.length || 0));
+        const list = res.data.results || (Array.isArray(res.data) ? res.data : []);
         renderTable(list);
+        Utils.renderPagination('paginationContainer', count, currentPage, 15, loadRequests);
 
         // Pre-trigger modal from URL redirect
         const urlParams = new URLSearchParams(window.location.search);

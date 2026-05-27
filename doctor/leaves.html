@@ -51,6 +51,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -114,6 +115,14 @@
         const response = await API.get('/doctors/leaves/');
         leaves = response.results || response || [];
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadLeaves();
+        });
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadLeaves();
+        });
       } catch (err) {
         Utils.showToast('Failed to load leave requests', 'danger');
       }

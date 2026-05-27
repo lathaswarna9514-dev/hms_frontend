@@ -58,6 +58,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -153,19 +154,25 @@
     let doctors = [];
     let specialties = [];
     let searchTimeout = null;
+    let currentPage = 1;
 
     async function initPage() {
       try {
         const [specData, docResponse] = await Promise.all([
           API.get('/doctors/specialties/'),
-          API.get('/doctors/')
+          API.get(`/doctors/?page=${currentPage}`)
         ]);
         
         specialties = specData.data || [];
         doctors = docResponse.data.results || docResponse.data || [];
+        const totalCount = docResponse.data.count !== undefined ? docResponse.data.count : doctors.length;
 
         populateSpecialtiesSelect();
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          initPage();
+        });
       } catch (err) {
         Utils.showToast('Failed to initialize doctor profiles directory', 'danger');
       }
@@ -207,15 +214,25 @@
     function debounceSearch() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(async () => {
-        const query = document.getElementById('doctorSearch').value;
-        try {
-          const response = await API.get(`/doctors/?search=${encodeURIComponent(query)}`);
-          doctors = response.data.results || response.data || [];
-          renderTable();
-        } catch (err) {
-          Utils.showToast('Search query failed', 'danger');
-        }
+        currentPage = 1;
+        loadDoctors();
       }, 300);
+    }
+
+    async function loadDoctors() {
+      const query = document.getElementById('doctorSearch').value;
+      try {
+        const response = await API.get(`/doctors/?page=${currentPage}&search=${encodeURIComponent(query)}`);
+        doctors = response.data.results || response.data || [];
+        const totalCount = response.data.count !== undefined ? response.data.count : doctors.length;
+        renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadDoctors();
+        });
+      } catch (err) {
+        Utils.showToast('Search query failed', 'danger');
+      }
     }
 
     // Modal control

@@ -47,7 +47,8 @@
                 <tr><td colspan="7" class="text-center text-muted py-4">Loading diagnostic catalog...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -122,13 +123,18 @@
     Utils.renderHeader('Diagnostic Catalog');
 
     let debounceTimeout;
+    let currentPage = 1;
+    let currentSearch = '';
 
-    async function loadTests(search = '') {
+    async function loadTests(page = 1) {
       try {
-        const query = search ? `?search=${encodeURIComponent(search)}` : '';
-        const res = await API.get(`/lab/tests/${query}`);
-        const tests = res.data.results || res.data || [];
+        currentPage = page;
+        const searchParam = currentSearch ? `&search=${encodeURIComponent(currentSearch)}` : '';
+        const res = await API.get(`/lab/tests/?page=${page}${searchParam}`);
+        const count = res.data.count !== undefined ? res.data.count : (res.data.results ? res.data.results.length : (res.data.length || 0));
+        const tests = res.data.results || (Array.isArray(res.data) ? res.data : []);
         renderTable(tests);
+        Utils.renderPagination('paginationContainer', count, currentPage, 15, loadTests);
       } catch (err) {
         Utils.showToast('Failed to load lab tests', 'danger');
       }
@@ -167,13 +173,14 @@
 
     function debounceSearch() {
       clearTimeout(debounceTimeout);
-      const search = document.getElementById('testSearch').value.trim();
-      debounceTimeout = setTimeout(() => loadTests(search), 350);
+      currentSearch = document.getElementById('testSearch').value.trim();
+      debounceTimeout = setTimeout(() => loadTests(1), 350);
     }
 
     function clearFilters() {
       document.getElementById('testSearch').value = '';
-      loadTests();
+      currentSearch = '';
+      loadTests(1);
     }
 
     // Modal Operations
@@ -223,7 +230,7 @@
           Utils.showToast('New test configured in catalog', 'success');
         }
         closeTestModal();
-        loadTests();
+        loadTests(currentPage);
       } catch (err) {
         Utils.showToast(err.message || 'Failed to save test', 'danger');
       }
@@ -234,13 +241,13 @@
       try {
         await API.delete(`/lab/tests/${id}/`);
         Utils.showToast('Test removed from catalog', 'success');
-        loadTests();
+        loadTests(currentPage);
       } catch (err) {
         Utils.showToast('Failed to delete test', 'danger');
       }
     }
 
-    loadTests();
+    loadTests(1);
   </script>
 </body>
 </html>

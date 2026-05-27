@@ -50,6 +50,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
           <div id="paginationInfo" class="text-xs text-muted mt-4" style="padding: 0 1rem 1rem;"></div>
         </div>
 
@@ -86,15 +87,21 @@
 
     let patients = [];
     let searchTimeout = null;
+    let currentPage = 1;
 
     async function loadPatients(search = '') {
       try {
-        const query = search ? `?search=${encodeURIComponent(search)}` : '';
-        const response = await API.get(`/patients/${query}`);
-        patients = response.data || [];
+        const query = search ? `&search=${encodeURIComponent(search)}` : '';
+        const response = await API.get(`/patients/?page=${currentPage}${query}`);
+        patients = response.data.results || response.data || [];
+        const totalCount = response.data.count !== undefined ? response.data.count : patients.length;
         renderTable();
         const info = document.getElementById('paginationInfo');
-        info.innerText = `Showing ${patients.length} patient record(s).`;
+        info.innerText = `Showing ${patients.length} of ${totalCount} patient record(s).`;
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadPatients(document.getElementById('patientSearch').value);
+        });
       } catch (err) {
         Utils.showToast('Failed to load patient registry', 'danger');
       }
@@ -122,6 +129,7 @@
     function debounceSearch() {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
+        currentPage = 1;
         loadPatients(document.getElementById('patientSearch').value);
       }, 350);
     }

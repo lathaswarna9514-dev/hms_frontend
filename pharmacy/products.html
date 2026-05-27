@@ -58,7 +58,8 @@
                 <tr><td colspan="8" class="text-center text-muted py-4">Loading medicine inventory...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -180,6 +181,8 @@
       document.getElementById('lowStockOnly').checked = true;
     }
 
+    let currentPage = 1;
+
     async function loadCategories() {
       try {
         const res = await API.get('/pharmacy/categories/');
@@ -201,7 +204,7 @@
       const category = document.getElementById('catCategoryFilter').value;
       const lowStock = document.getElementById('lowStockOnly').checked;
 
-      let query = '?';
+      let query = `?page=${currentPage}&`;
       if (search) query += `search=${encodeURIComponent(search)}&`;
       if (category) query += `category=${category}&`;
       if (lowStock) query += `low_stock=true&`;
@@ -209,7 +212,12 @@
       try {
         const res = await API.get(`/pharmacy/medicines/${query}`);
         const list = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : list.length;
         renderTable(list);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadMedicines();
+        });
       } catch (err) {
         Utils.showToast('Failed to load inventory', 'danger');
       }
@@ -254,13 +262,17 @@
 
     function debounceSearch() {
       clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(loadMedicines, 350);
+      debounceTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadMedicines();
+      }, 350);
     }
 
     function clearFilters() {
       document.getElementById('catSearch').value = '';
       document.getElementById('catCategoryFilter').value = '';
       document.getElementById('lowStockOnly').checked = false;
+      currentPage = 1;
       loadMedicines();
     }
 

@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="../css/animations.css">  
     <link rel="stylesheet" href="../css/main.css">  
     <link rel="stylesheet" href="../css/patient.css">
+    <link rel="stylesheet" href="../assets/css/design-system.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
     <title>All Doctors</title>
     <style>
         .sub-table{
@@ -52,6 +54,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="paginationContainer" style="width: 93%; margin: 15px auto;"></div>
             </center>
         </div>
     </div>
@@ -103,11 +106,17 @@
         const viewModal = document.getElementById('viewModal');
         let selectedDoctorId = null;
 
-        async function loadDoctors(search = '') {
+        let currentPage = 1;
+        let currentSearch = '';
+
+        async function loadDoctors(search = '', page = 1) {
+            currentPage = page;
+            currentSearch = search;
             tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #777;">Loading doctors...</td></tr>`;
             try {
-                const res = await ApiService.doctors.getAll(search);
-                const doctors = res.data;
+                const res = await ApiService.doctors.getAll(search, page);
+                const count = res.count !== undefined ? res.count : (res.results ? res.results.length : (res.data ? res.data.length : 0));
+                const doctors = res.results || res.data || [];
                 tableBody.innerHTML = '';
 
                 if (doctors.length > 0) {
@@ -150,6 +159,9 @@
                         </tr>
                     `;
                 }
+                Utils.renderPagination('paginationContainer', count, currentPage, 15, (newPage) => {
+                    loadDoctors(currentSearch, newPage);
+                });
             } catch (err) {
                 console.error(err);
             }
@@ -189,11 +201,11 @@
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const searchVal = document.getElementById('doctorSearch').value.trim();
-            loadDoctors(searchVal);
+            loadDoctors(searchVal, 1);
         });
 
         // Initial Load
-        loadDoctors();
+        loadDoctors('', 1);
     </script>
 
     <script src="../assets/js/utils.js"></script>

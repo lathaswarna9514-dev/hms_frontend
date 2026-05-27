@@ -283,8 +283,8 @@ export const ApiService = {
 
     // Doctors endpoints
     doctors: {
-        async getAll(search = '') {
-            return await apiFetch(`/doctors/?search=${encodeURIComponent(search)}`);
+        async getAll(search = '', page = 1) {
+            return await apiFetch(`/doctors/?search=${encodeURIComponent(search)}&page=${page}`);
         },
         async getSpecialties() {
             return await apiFetch('/doctors/specialties/');
@@ -313,8 +313,8 @@ export const ApiService = {
 
     // Patients endpoints
     patients: {
-        async getAll(search = '') {
-            return await apiFetch(`/patients/?search=${encodeURIComponent(search)}`);
+        async getAll(search = '', page = 1) {
+            return await apiFetch(`/patients/?search=${encodeURIComponent(search)}&page=${page}`);
         },
         async get(id) {
             return await apiFetch(`/patients/${id}/`);
@@ -437,16 +437,16 @@ export const ApiService = {
     // Support endpoints
     support: {
         async create(payload) {
-            return await apiFetch('/support/tickets/', {
+            return await apiFetch('/tickets/', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
         },
         async getMyTickets() {
-            return await apiFetch('/support/tickets/');
+            return await apiFetch('/tickets/');
         },
         async resolve(id) {
-            return await apiFetch(`/support/tickets/${id}/`, {
+            return await apiFetch(`/tickets/${id}/`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status: 'resolved' })
             });

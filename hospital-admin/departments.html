@@ -52,6 +52,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -120,6 +121,14 @@
         // DRF returns paginated: { count, results:[...] }
         departments = response.data.results || response.data || [];
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadDepartments();
+        });
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadDepartments();
+        });
       } catch (err) {
         Utils.showToast('Failed to load departments', 'danger');
       }

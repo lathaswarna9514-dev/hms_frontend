@@ -3,55 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Front Desk Staff - eDoc HMS</title>
+  <title>My Profile - eDoc HMS</title>
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="stylesheet" href="../assets/css/components.css">
 </head>
 <body>
 
-  <!-- Layout Wrapper -->
   <div class="layout-container">
-    <!-- Sidebar -->
     <aside class="sidebar"></aside>
-
-    <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Header is rendered by JS -->
-
-      <!-- Content wrapper -->
       <div class="content-wrapper">
-        
-        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
-          <div>
-            <h2 class="font-bold">Front Desk Staff</h2>
-            <p class="text-muted mt-1">Manage front desk staff across the platform.</p>
-          </div>
-          <button class="btn btn-primary" onclick="openModal()">
-            + Add New
-          </button>
+        <div style="width: 100%; max-width: 640px; margin: 0 auto;">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">My Profile</h2>
+          <p class="text-muted mt-1">View your profile details.</p>
         </div>
 
         <div class="card">
-          <div class="table-responsive">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Details</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="dataTableBody">
-                <tr>
-                  <td colspan="4" class="text-center text-muted py-4">Fetching data...</td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Profile Header -->
+          <div class="flex items-center mb-6" style="gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: white; flex-shrink: 0;" id="userAvatar">U</div>
+            <div>
+              <div class="font-bold text-lg" id="userNameHeader">Loading...</div>
+              <div class="text-sm text-muted" id="userEmailHeader"></div>
+              <span class="badge badge-success mt-2">Super Admin</span>
+            </div>
           </div>
-          <div id="paginationContainer"></div>
+          
+          <div class="form-group">
+            <label class="form-label" for="userName">Full Name</label>
+            <input type="text" id="userName" class="form-input" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="userEmail">Email Address</label>
+            <input type="email" id="userEmail" class="form-input" readonly>
+          </div>
         </div>
 
+        </div>
       </div>
     </main>
   </div>
@@ -116,41 +106,27 @@
       }
     ];
 
-    Utils.renderSidebar(superAdminMenu, '../super-admin/frontdesk.html', 'eDoc Console', 'Global platform');
-    Utils.renderHeader('Front Desk Staff');
+    Utils.renderSidebar(superAdminMenu, '../super-admin/profile.html', 'eDoc Console', 'Super Admin Portal');
+    Utils.renderHeader('My Profile');
 
-    let currentPage = 1;
+    const user = Auth.getUser();
 
-    async function loadStaff() {
-      try {
-        const response = await API.get(`/auth/super-admin/staff/?usertype=r&page=${currentPage}`);
-        const allStaff = response.data.results || response.data || [];
-        const totalCount = response.data.count !== undefined ? response.data.count : allStaff.length;
-        const tbody = document.getElementById('dataTableBody');
-        if (allStaff.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No front desk staff found.</td></tr>`;
-          return;
+    async function init() {
+      if (user) {
+        document.getElementById('userName').value = user.name || '';
+        document.getElementById('userEmail').value = user.email || '';
+        document.getElementById('userNameHeader').innerText = user.name || 'User';
+        document.getElementById('userEmailHeader').innerText = user.email || '';
+        
+        let initial = 'U';
+        if (user.name) {
+          initial = user.name.charAt(0).toUpperCase();
         }
-        tbody.innerHTML = allStaff.map(s => `
-          <tr>
-            <td><span class="font-mono text-sm">${s.id}</span></td>
-            <td>
-              <strong>${s.name}</strong><br>
-              <span class="text-xs text-muted">${s.email}</span>
-            </td>
-            <td><span class="badge badge-secondary">${s.hospital_name || 'Unassigned'}</span></td>
-            <td><span class="text-sm">NIC: ${s.nic || '--'}</span></td>
-          </tr>
-        `).join('');
-        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
-          currentPage = newPage;
-          loadStaff();
-        });
-      } catch (err) {
-        Utils.showToast('Failed to load front desk staff', 'danger');
+        document.getElementById('userAvatar').innerText = initial;
       }
     }
-    loadStaff();
+
+    init();
   </script>
 </body>
 </html>

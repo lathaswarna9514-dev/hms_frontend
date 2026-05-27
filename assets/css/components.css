@@ -1039,6 +1039,257 @@ select.form-control:hover {
   margin: 0.25rem 0 0;
 }
 
+/* Pagination Component */
+.pagination-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.pagination-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--card);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pagination-count-label {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-weight: 600;
+  min-width: 55px;
+  text-align: center;
+  background: var(--muted-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.pagination-count-label.prev-count {
+  order: 1;
+}
+
+.pagination-btn.prev-btn {
+  order: 2;
+}
+
+.pagination-current {
+  order: 3;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--foreground);
+  min-width: 70px;
+  text-align: center;
+}
+
+.pagination-btn.next-btn {
+  order: 4;
+}
+
+.pagination-count-label.next-count {
+  order: 5;
+}
+
+.pagination-btn {
+  background: var(--muted-bg);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  transform: translateY(-1px);
+}
+
+.pagination-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--muted-bg);
+  color: var(--muted);
+}
+
+.pagination-records-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--muted-bg);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--foreground);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pagination-records-badge:hover {
+  border-color: var(--primary);
+  background: var(--card);
+}
+
+.pagination-records-badge .badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.pagination-records-badge strong {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* ── Page Title Row — single line: heading + pagination + button ── */
+.page-title-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 1rem !important;
+  flex-wrap: nowrap !important;
+  margin-bottom: 1.5rem;
+}
+
+.page-title-row > div:first-child {
+  flex-shrink: 1;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.page-title-row > .pagination-wrapper {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.page-title-row > button,
+.page-title-row > a.btn {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+/* When there's a button after pagination, remove auto margin from pagination */
+.page-title-row > .pagination-wrapper ~ button,
+.page-title-row > .pagination-wrapper ~ a.btn {
+  margin-left: 0.75rem;
+}
+
+.page-title-row > .pagination-wrapper:last-child {
+  margin-left: auto;
+}
+
+/* ── Responsive: keep single line, shrink components ── */
+@media (max-width: 1200px) {
+  .page-title-row {
+    gap: 0.5rem !important;
+  }
+
+  .pagination-container {
+    gap: 0.4rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .pagination-count-label {
+    min-width: auto;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.35rem;
+  }
+
+  .pagination-current {
+    font-size: 0.7rem;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title-row {
+    gap: 0.35rem !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  .page-title-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .page-title-row > div:first-child h2,
+  .page-title-row > div:first-child h1,
+  .page-title-row > div:first-child h3 {
+    font-size: 0.85rem !important;
+    white-space: nowrap;
+  }
+
+  .page-title-row > div:first-child p {
+    display: none;
+  }
+
+  .pagination-container {
+    gap: 0.2rem !important;
+    padding: 0.15rem 0.3rem !important;
+  }
+
+  .pagination-count-label {
+    min-width: auto !important;
+    font-size: 0.55rem !important;
+    padding: 0.1rem 0.25rem !important;
+  }
+
+  .pagination-btn {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+  }
+
+  .pagination-btn svg {
+    width: 9px !important;
+    height: 9px !important;
+  }
+
+  .pagination-current {
+    font-size: 0.55rem !important;
+    min-width: auto !important;
+  }
+
+  .pagination-records-badge {
+    padding: 0.15rem 0.3rem !important;
+    font-size: 0.55rem !important;
+  }
+
+  .pagination-records-badge svg {
+    width: 9px !important;
+    height: 9px !important;
+  }
+}
+
 /* ============================================================
    MOBILE RESPONSIVENESS OVERRIDES
    ============================================================ */

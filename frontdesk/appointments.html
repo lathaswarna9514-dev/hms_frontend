@@ -51,7 +51,8 @@
                 <tr><td colspan="7" class="text-center text-muted py-4">Loading appointments...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
           <div id="apptCount" class="text-xs text-muted mt-3 px-1"></div>
         </div>
 
@@ -144,18 +145,25 @@
     // Set today's date by default
     document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
 
+    let currentPage = 1;
+
     async function loadAppointments() {
       const date = document.getElementById('filterDate').value;
       const search = document.getElementById('filterSearch').value;
-      let query = '?';
+      let query = `?page=${currentPage}&`;
       if (date) query += `date=${date}&`;
       if (search) query += `search=${encodeURIComponent(search)}&`;
 
       try {
         const res = await API.get(`/appointments/${query}`);
-        const appts = res.data || [];
-        document.getElementById('apptCount').innerText = `${res.count || appts.length} appointment(s) found.`;
+        const appts = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : appts.length;
+        document.getElementById('apptCount').innerText = `${totalCount} appointment(s) found.`;
         renderTable(appts);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadAppointments();
+        });
       } catch (err) {
         Utils.showToast('Failed to load appointments', 'danger');
       }
@@ -183,7 +191,10 @@
 
     function debounceSearch() {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(loadAppointments, 350);
+      searchTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadAppointments();
+      }, 350);
     }
 
     function clearFilters() {

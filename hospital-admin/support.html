@@ -58,6 +58,7 @@
                 </tbody>
               </table>
             </div>
+            <div id="paginationContainer"></div>
           </div>
 
         </div>
@@ -110,12 +111,18 @@
     Utils.renderHeader('Hospital Support Desk');
 
     let ticketsList = [];
+    let currentPage = 1;
 
     async function loadTickets() {
       try {
-        const res = await API.get('/support/tickets/');
-        ticketsList = res.data || [];
+        const res = await API.get(`/tickets/?page=${currentPage}`);
+        ticketsList = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : ticketsList.length;
         renderTable(ticketsList);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadTickets();
+        });
       } catch (err) {
         Utils.showToast('Failed to load tickets', 'danger');
       }
@@ -175,7 +182,7 @@
       if (!subject || !message) return;
 
       try {
-        await API.post('/support/tickets/', { subject, message });
+        await API.post('/tickets/', { subject, message });
         Utils.showToast('Ticket submitted successfully! Check your email inbox.', 'success');
         document.getElementById('ticketForm').reset();
         loadTickets();

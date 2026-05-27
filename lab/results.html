@@ -45,7 +45,8 @@
                 <tr><td colspan="7" class="text-center text-muted py-4">Checking active samples queue...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -129,10 +130,11 @@
     Utils.renderSidebar(labMenu, '../lab/results.html', 'Diagnostic Lab', 'Department Console');
     Utils.renderHeader('Result Sheets');
 
-    let currentFilter = 'collected';
+    let currentPage = 1;
 
     function filterStatus(status) {
       currentFilter = status;
+      currentPage = 1;
       document.getElementById('tabCollected').classList.remove('active');
       document.getElementById('tabCompleted').classList.remove('active');
       if (status === 'collected') document.getElementById('tabCollected').classList.add('active');
@@ -142,9 +144,15 @@
 
     async function loadQueue() {
       try {
-        const res = await API.get(`/lab/requests/?status=${currentFilter}`);
+        const res = await API.get(`/lab/requests/?status=${currentFilter}&page=${currentPage}`);
         const list = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : list.length;
         renderTable(list);
+
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadQueue();
+        });
 
         // Pre-select from URL deep-link
         const urlParams = new URLSearchParams(window.location.search);

@@ -51,6 +51,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -118,12 +119,22 @@
     Utils.renderHeader('Shift Configuration');
 
     let shifts = [];
+    let currentPage = 1;
+    let currentPage = 1;
 
     async function loadShifts() {
       try {
         const response = await API.get('/schedules/shifts/');
         shifts = response.data.results || response.data || [];
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadShifts();
+        });
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadShifts();
+        });
       } catch (err) {
         Utils.showToast('Failed to load shifts', 'danger');
       }

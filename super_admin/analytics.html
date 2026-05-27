@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Analytics - eDoc HMS</title>
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <div class="layout-container">
+    <aside class="sidebar"></aside>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <div style="margin-bottom: 2rem;">
+          <h2 class="font-bold">Platform Analytics</h2>
+          <p class="text-muted mt-1">Live platform growth metrics and hospital performance overview.</p>
+        </div>
+
+        <!-- Stat Cards Row -->
+        <div class="grid grid-cols-4 gap-4" style="margin-bottom: 2rem;">
+          <div class="stat-card">
+            <div class="stat-title">Total Hospitals</div>
+            <div class="stat-value" id="statHospitals">—</div>
+            <div style="font-size:var(--text-xs);color:var(--success);font-weight:600;margin-top:0.5rem;">↑ Active Nodes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Registered Patients</div>
+            <div class="stat-value" id="statPatients">—</div>
+            <div style="font-size:var(--text-xs);color:var(--muted);font-weight:600;margin-top:0.5rem;">Across all hospitals</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Active Doctors</div>
+            <div class="stat-value" id="statDoctors">—</div>
+            <div style="font-size:var(--text-xs);color:var(--muted);font-weight:600;margin-top:0.5rem;">Authorized specialists</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Open Support Tickets</div>
+            <div class="stat-value" id="statTickets" style="color:var(--danger);">—</div>
+            <div style="font-size:var(--text-xs);color:var(--danger);font-weight:600;margin-top:0.5rem;">Needs attention</div>
+          </div>
+        </div>
+
+        <!-- Growth Chart -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="flex justify-between items-center" style="margin-bottom:1.5rem;">
+            <div>
+              <h4 class="font-bold">Platform Growth</h4>
+              <p class="text-muted" style="font-size:var(--text-sm);">Hospital nodes & patient registrations over the last 6 months</p>
+            </div>
+          </div>
+          <div style="position:relative; height:300px;">
+            <canvas id="growthChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Hospital Breakdown Table -->
+        <div class="card">
+          <div class="flex justify-between items-center" style="margin-bottom:1.5rem;">
+            <h4 class="font-bold">Hospital Node Directory</h4>
+            <a href="hospitals.html" class="btn btn-secondary btn-sm">Manage Hospitals</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Node ID</th>
+                  <th>Hospital Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="hospitalsTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-4">Loading hospital data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/auth.js"></script>
+  <script src="../assets/js/utils.js"></script>
+  <script>
+    Auth.guard(['super-admin']);
+
+    const superAdminMenu = [
+      {
+        label: 'Dashboard Overview',
+        path: '../super-admin/dashboard.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>'
+      },
+      {
+        label: 'Analytics',
+        path: '../super-admin/analytics.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>'
+      },
+      {
+        label: 'Platform Admins',
+        path: '../super-admin/admins.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>'
+      },
+      {
+        label: 'Provision Hospitals',
+        path: '../super-admin/hospitals.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+      },
+      {
+        label: 'Doctors',
+        path: '../super-admin/doctors.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+      },
+      {
+        label: 'Patients',
+        path: '../super-admin/patients.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
+      },
+      {
+        label: 'Staff Directory',
+        path: '../super-admin/nurses.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
+        subItems: [
+          { label: 'Nurses', path: '../super-admin/nurses.html' },
+          { label: 'Front Desk', path: '../super-admin/frontdesk.html' },
+          { label: 'Laboratory', path: '../super-admin/lab.html' },
+          { label: 'Pharmacy', path: '../super-admin/pharmacy.html' }
+        ]
+      },
+      {
+        label: 'Support Tickets',
+        path: '../super-admin/tickets.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+      },
+      {
+        label: 'Platform Settings',
+        path: '../super-admin/settings.html',
+        iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+      }
+    ];
+
+    Utils.renderSidebar(superAdminMenu, '../super-admin/analytics.html', 'eDoc Console', 'Global platform');
+    Utils.renderHeader('Platform Analytics');
+
+    let growthChart = null;
+
+    async function loadAnalytics() {
+      try {
+        // Load dashboard stats (totals)
+        const dashRes = await API.get('/dashboard/super-admin/');
+        if (dashRes.success) {
+          const stats = dashRes.data.stats;
+          document.getElementById('statHospitals').innerText = stats.total_hospitals;
+          document.getElementById('statPatients').innerText = stats.total_patients;
+          document.getElementById('statDoctors').innerText = stats.total_doctors;
+          document.getElementById('statTickets').innerText = stats.pending_tickets;
+        }
+      } catch (e) {
+        console.warn('Could not load dashboard stats', e);
+      }
+
+      try {
+        // Load growth analytics
+        const analyticsRes = await API.get('/dashboard/super-admin/analytics/');
+        if (analyticsRes.success) {
+          const growth = analyticsRes.data.growth;
+          renderGrowthChart(growth.labels, growth.hospitals, growth.patients);
+        }
+      } catch (e) {
+        console.warn('Could not load analytics', e);
+      }
+
+      try {
+        // Load hospital table
+        const hospitalsRes = await API.get('/hospitals/');
+        const hospitals = hospitalsRes.data.results || hospitalsRes.data || [];
+        renderHospitalsTable(hospitals);
+      } catch (e) {
+        document.getElementById('hospitalsTableBody').innerHTML =
+          `<tr><td colspan="5" class="text-center text-muted">Failed to load hospitals.</td></tr>`;
+      }
+    }
+
+    function renderGrowthChart(labels, hospitalsData, patientsData) {
+      const ctx = document.getElementById('growthChart').getContext('2d');
+      if (growthChart) growthChart.destroy();
+
+      growthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Hospital Nodes',
+              data: hospitalsData,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99,102,241,0.12)',
+              borderWidth: 2.5,
+              pointRadius: 5,
+              pointBackgroundColor: '#6366f1',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Registered Patients',
+              data: patientsData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16,185,129,0.08)',
+              borderWidth: 2.5,
+              pointRadius: 5,
+              pointBackgroundColor: '#10b981',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: '#94a3b8', font: { size: 13 } }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(148,163,184,0.1)' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(148,163,184,0.1)' },
+              ticks: { color: '#94a3b8', stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderHospitalsTable(hospitals) {
+      const tbody = document.getElementById('hospitalsTableBody');
+      if (!hospitals.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No hospitals provisioned yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = hospitals.map(h => `
+        <tr>
+          <td><span class="font-mono text-sm">${h.id}</span></td>
+          <td><strong>${h.name}</strong></td>
+          <td><span class="text-sm text-muted">${h.email}</span></td>
+          <td><span class="text-sm">${h.phone || '—'}</span></td>
+          <td>
+            <span class="badge ${h.is_active ? 'badge-success' : 'badge-danger'}">
+              ${h.is_active ? 'Active' : 'Suspended'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    loadAnalytics();
+  </script>
+</body>
+</html>

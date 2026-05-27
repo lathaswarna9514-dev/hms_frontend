@@ -51,6 +51,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -110,6 +111,8 @@
     Utils.renderHeader('My Schedules');
 
     let schedules = [];
+    let currentPage = 1;
+    let currentPage = 1;
 
     async function loadSchedules() {
       const upcoming = document.getElementById('filterStatus').value === 'upcoming' ? '&upcoming=true' : '';
@@ -123,6 +126,14 @@
           schedules = schedules.filter(s => s.schedule_date >= today);
         }
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadSchedules();
+        });
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadSchedules();
+        });
       } catch (err) {
         console.error(err);
         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No sessions found. Click New Session to create one.</td></tr>`;

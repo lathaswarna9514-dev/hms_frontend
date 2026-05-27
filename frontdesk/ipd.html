@@ -53,7 +53,8 @@
                 <tr><td colspan="6" class="text-center text-muted py-4">Loading admissions...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
           <div id="apptCount" class="text-xs text-muted mt-3 px-1"></div>
         </div>
 
@@ -118,6 +119,7 @@
   <script src="../assets/js/utils.js"></script>
   <script>
     Auth.guard(['frontdesk']);
+    let currentPage = 1;
 
     const fdMenu = [
       { label: 'Dashboard', path: '../frontdesk/dashboard.html', iconSvg: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>' },
@@ -140,12 +142,15 @@
       if (statusVal) query += `status=${statusVal}&`;
 
       try {
-        const res = await API.get(`/ipd/admissions/${query}`);
-        // ModelViewSet with pagination returns res.data.results
+        const res = await API.get(`/ipd/admissions/${query}page=${currentPage}&`);
         const data = res.data.results || res.data || [];
         const count = res.data.count !== undefined ? res.data.count : data.length;
         document.getElementById('apptCount').innerText = `${count} admission(s) found.`;
         renderTable(data);
+        Utils.renderPagination('paginationContainer', count, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadAdmissions();
+        });
       } catch (err) {
         console.error(err);
         Utils.showToast('Failed to load admissions', 'danger');

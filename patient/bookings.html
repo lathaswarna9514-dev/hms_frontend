@@ -309,7 +309,8 @@
                 </tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -417,11 +418,14 @@
       return `${hr}:${min} ${ampm}`;
     }
 
+    let currentPage = 1;
+
     async function loadBookings() {
       bookingsList.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading bookings...</td></tr>';
       try {
-        const res = await API.get('/appointments/my/');
-        const bookings = res.data || res.results || [];
+        const res = await API.get(`/appointments/my/?page=${currentPage}`);
+        const bookings = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : bookings.length;
         window.loadedBookings = bookings;
         bookingsList.innerHTML = '';
 
@@ -455,6 +459,11 @@
             </td>
           `;
           bookingsList.appendChild(tr);
+        });
+
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadBookings();
         });
 
         document.querySelectorAll('.btn-print').forEach(btn => {

@@ -44,6 +44,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -69,6 +70,7 @@
     Utils.renderHeader('My Patients');
 
     let mySessions = [];
+    let currentPage = 1;
 
     async function init() {
       try {
@@ -80,6 +82,10 @@
           opt.value = s.id;
           opt.text = `${s.title} — ${s.schedule_date}`;
           select.appendChild(opt);
+        });
+
+        select.addEventListener('change', () => {
+          currentPage = 1;
         });
 
         // Check URL query for pre-selected schedule
@@ -96,6 +102,7 @@
     async function loadAppointments() {
       const scheduleId = document.getElementById('sessionFilter').value;
       const tbody = document.getElementById('appointmentsBody');
+      const pagContainer = document.getElementById('paginationContainer');
       try {
         let appointments = [];
         if (scheduleId) {
@@ -103,11 +110,17 @@
           const res = await API.get(`/schedules/${scheduleId}/`);
           appointments = res.data.booked_patients || [];
           renderTable(appointments, scheduleId);
+          if (pagContainer) pagContainer.innerHTML = '';
         } else {
-          // Load from all sessions via appointments endpoint
-          const res = await API.get('/appointments/doctor/');
-          appointments = res.data || [];
+          // Load from all sessions via appointments endpoint (paginated)
+          const res = await API.get(`/appointments/doctor/?page=${currentPage}`);
+          appointments = res.data.results || res.data || [];
+          const totalCount = res.data.count !== undefined ? res.data.count : appointments.length;
           renderTableFull(appointments);
+          Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+            currentPage = newPage;
+            loadAppointments();
+          });
         }
       } catch (err) {
         console.error(err);

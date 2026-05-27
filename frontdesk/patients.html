@@ -44,7 +44,8 @@
                 <tr><td colspan="7" class="text-center text-muted py-4">Start typing to search patients...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
           <div id="patCount" class="text-xs text-muted mt-3 px-1"></div>
         </div>
 
@@ -90,13 +91,21 @@
     let searchTimeout = null;
     let viewingPatientId = null;
 
+    let currentPage = 1;
+
     async function loadPatients(search = '') {
       try {
-        const q = search ? `?search=${encodeURIComponent(search)}` : '';
+        let q = `?page=${currentPage}`;
+        if (search) q += `&search=${encodeURIComponent(search)}`;
         const res = await API.get(`/patients/${q}`);
-        const patients = res.data || [];
-        document.getElementById('patCount').innerText = `${res.count || patients.length} patient(s) found.`;
+        const patients = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : patients.length;
+        document.getElementById('patCount').innerText = `${totalCount} patient(s) found.`;
         renderTable(patients);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadPatients(search);
+        });
       } catch (err) {
         Utils.showToast('Failed to load patients', 'danger');
       }
@@ -128,7 +137,10 @@
     function debounceSearch() {
       clearTimeout(searchTimeout);
       const q = document.getElementById('patSearch').value.trim();
-      searchTimeout = setTimeout(() => loadPatients(q), 350);
+      searchTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadPatients(q);
+      }, 350);
     }
 
     function clearSearch() {

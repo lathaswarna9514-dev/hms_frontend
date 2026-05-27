@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Front Desk Staff - eDoc HMS</title>
+  <title>Support Feedback - eDoc HMS</title>
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="stylesheet" href="../assets/css/components.css">
 </head>
@@ -23,8 +23,8 @@
         
         <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
           <div>
-            <h2 class="font-bold">Front Desk Staff</h2>
-            <p class="text-muted mt-1">Manage front desk staff across the platform.</p>
+            <h2 class="font-bold">Support Feedback</h2>
+            <p class="text-muted mt-1">Manage support feedback across the platform.</p>
           </div>
           <button class="btn btn-primary" onclick="openModal()">
             + Add New
@@ -49,7 +49,6 @@
               </tbody>
             </table>
           </div>
-          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -116,41 +115,8 @@
       }
     ];
 
-    Utils.renderSidebar(superAdminMenu, '../super-admin/frontdesk.html', 'eDoc Console', 'Global platform');
-    Utils.renderHeader('Front Desk Staff');
-
-    let currentPage = 1;
-
-    async function loadStaff() {
-      try {
-        const response = await API.get(`/auth/super-admin/staff/?usertype=r&page=${currentPage}`);
-        const allStaff = response.data.results || response.data || [];
-        const totalCount = response.data.count !== undefined ? response.data.count : allStaff.length;
-        const tbody = document.getElementById('dataTableBody');
-        if (allStaff.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No front desk staff found.</td></tr>`;
-          return;
-        }
-        tbody.innerHTML = allStaff.map(s => `
-          <tr>
-            <td><span class="font-mono text-sm">${s.id}</span></td>
-            <td>
-              <strong>${s.name}</strong><br>
-              <span class="text-xs text-muted">${s.email}</span>
-            </td>
-            <td><span class="badge badge-secondary">${s.hospital_name || 'Unassigned'}</span></td>
-            <td><span class="text-sm">NIC: ${s.nic || '--'}</span></td>
-          </tr>
-        `).join('');
-        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
-          currentPage = newPage;
-          loadStaff();
-        });
-      } catch (err) {
-        Utils.showToast('Failed to load front desk staff', 'danger');
-      }
-    }
-    loadStaff();
+    Utils.renderSidebar(superAdminMenu, '../super-admin/support-feedback.html', 'eDoc Console', 'Global platform');
+    Utils.renderHeader('Support Feedback');
   </script>
 </body>
 </html>

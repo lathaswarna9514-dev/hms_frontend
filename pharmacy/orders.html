@@ -50,7 +50,8 @@
                 <tr><td colspan="10" class="text-center text-muted py-4">Loading dispensing logs...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -129,12 +130,20 @@
     let debounceTimeout;
     let medicinesList = [];
 
+    let currentPage = 1;
+
     async function loadDispenseLogs(search = '') {
       try {
-        const query = search ? `?search=${encodeURIComponent(search)}` : '';
+        let query = `?page=${currentPage}`;
+        if (search) query += `&search=${encodeURIComponent(search)}`;
         const res = await API.get(`/pharmacy/orders/${query}`);
         const logs = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : logs.length;
         renderTable(logs);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadDispenseLogs(search);
+        });
       } catch (err) {
         Utils.showToast('Failed to load dispensing records', 'danger');
       }
@@ -180,7 +189,10 @@
     function debounceSearch() {
       clearTimeout(debounceTimeout);
       const searchVal = document.getElementById('orderSearch').value.trim();
-      debounceTimeout = setTimeout(() => loadDispenseLogs(searchVal), 350);
+      debounceTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadDispenseLogs(searchVal);
+      }, 350);
     }
 
     function clearSearch() {

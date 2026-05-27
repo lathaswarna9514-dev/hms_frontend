@@ -68,6 +68,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -112,24 +113,30 @@
       } else {
         currentFilter = { department: tabType, appointment_type: '' };
       }
-      loadAppointments();
+      loadAppointments(1);
     }
 
-    async function loadAppointments() {
+    let currentPage = 1;
+
+    async function loadAppointments(page = 1) {
+      currentPage = page;
       const tbody = document.getElementById('appointmentsList');
       tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Loading...</td></tr>';
       
       try {
-        let query = '';
-        if (currentFilter.department) query += `?department_type=${currentFilter.department}`;
-        if (currentFilter.appointment_type) query += `${query?'&':'?'}appointment_type=${currentFilter.appointment_type}`;
+        let query = `?page=${page}`;
+        if (currentFilter.department) query += `&department_type=${currentFilter.department}`;
+        if (currentFilter.appointment_type) query += `&appointment_type=${currentFilter.appointment_type}`;
         
         const res = await API.get(`/appointments/${query}`);
         if (res.success) {
-          if (res.data.length === 0) {
+          const count = res.data.count !== undefined ? res.data.count : (res.data.results ? res.data.results.length : (res.data.length || 0));
+          const list = res.data.results || (Array.isArray(res.data) ? res.data : []);
+          
+          if (list.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No appointments found.</td></tr>`;
           } else {
-            tbody.innerHTML = res.data.map(a => `
+            tbody.innerHTML = list.map(a => `
               <tr>
                 <td><strong>#${a.appointment_number}</strong></td>
                 <td>${a.patient_name}</td>
@@ -144,6 +151,7 @@
               </tr>
             `).join('');
           }
+          Utils.renderPagination('paginationContainer', count, currentPage, 15, loadAppointments);
         }
       } catch (err) {
         console.error(err);
@@ -162,7 +170,7 @@
     }
 
     // Initial load
-    loadAppointments();
+    loadAppointments(1);
   </script>
 </body>
 </html>

@@ -78,6 +78,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -130,6 +131,7 @@
 
     let debounceTimeout;
     let selectedDetailInvoiceId = null;
+    let currentPage = 1;
 
     async function loadInvoices() {
       const search = document.getElementById('billSearch').value.trim();
@@ -141,7 +143,7 @@
       if (typeVal) query += `billing_type=${typeVal}&`;
 
       try {
-        const res = await API.get(`/billing/invoices/${query}`);
+        const res = await API.get(`/billing/invoices/${query}page=${currentPage}&`);
         const list = res.data || [];
         
         // Calculate totals
@@ -165,10 +167,24 @@
         document.getElementById('auditPaid').innerText = `$${paid.toFixed(2)}`;
         document.getElementById('auditTotal').innerText = `$${(outstanding + paid).toFixed(2)}`;
 
-        document.getElementById('outstandingCount').innerText = `${outCount} pending invoices`;
-        document.getElementById('paidCount').innerText = `${pCount} transactions completed`;
+        document.getElementById('outstandingCount').innerText = `${res.data.pending_count || 0} pending invoices`;
+        document.getElementById('paidCount').innerText = `${res.data.paid_count || 0} transactions completed`;
+        
+        // Extract settled sums
+        const outstanding = res.data.outstanding_amount || 0;
+        const paid = res.data.settled_amount || 0;
+        document.getElementById('auditOutstanding').innerText = `$${outstanding.toFixed(2)}`;
+        document.getElementById('auditPaid').innerText = `$${paid.toFixed(2)}`;
+        document.getElementById('auditTotal').innerText = `$${(outstanding + paid).toFixed(2)}`;
 
-        renderTable(list);
+        const invoicesList = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : invoicesList.length;
+
+        renderTable(invoicesList);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadInvoices();
+        });
       } catch (err) {
         Utils.showToast('Failed to load audit registry', 'danger');
       }
@@ -203,7 +219,10 @@
 
     function debounceSearch() {
       clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(loadInvoices, 350);
+      debounceTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadInvoices();
+      }, 350);
     }
 
     function clearFilters() {

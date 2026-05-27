@@ -56,7 +56,8 @@
                 <tr><td colspan="7" class="text-center text-muted py-4">Checking invoice registry...</td></tr>
               </tbody>
             </table>
-          </div>
+            </div>
+            <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -180,6 +181,7 @@
 
     let debounceTimeout;
     let selectedDetailInvoiceId = null;
+    let currentPage = 1;
 
     async function loadInvoices() {
       const search = document.getElementById('billSearch').value.trim();
@@ -189,9 +191,14 @@
       if (statusVal) query += `status=${statusVal}&`;
 
       try {
-        const res = await API.get(`/billing/invoices/${query}`);
-        const list = res.data || [];
+        const res = await API.get(`/billing/invoices/${query}page=${currentPage}&`);
+        const list = res.data.results || res.data || [];
+        const totalCount = res.data.count !== undefined ? res.data.count : list.length;
         renderTable(list);
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadInvoices();
+        });
       } catch (err) {
         Utils.showToast('Failed to load billing records', 'danger');
       }
@@ -226,7 +233,10 @@
 
     function debounceSearch() {
       clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(loadInvoices, 350);
+      debounceTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadInvoices();
+      }, 350);
     }
 
     function clearFilters() {

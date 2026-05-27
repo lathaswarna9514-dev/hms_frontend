@@ -53,6 +53,7 @@
               </tbody>
             </table>
           </div>
+          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -127,13 +128,18 @@
     Utils.renderHeader('Laboratory Staff');
 
     let allStaff = [];
+    let currentPage = 1;
 
     async function loadStaff() {
       try {
-        const response = await API.get('/auth/staff/');
-        const staffList = response.data.results || response.data || [];
-        allStaff = staffList.filter(s => s.usertype === 'lab');
+        const response = await API.get(`/auth/staff/?usertype=l&page=${currentPage}`);
+        allStaff = response.data.results || response.data || [];
+        const totalCount = response.data.count !== undefined ? response.data.count : allStaff.length;
         renderTable();
+        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
+          currentPage = newPage;
+          loadStaff();
+        });
       } catch (err) {
         Utils.showToast('Failed to load lab staff registry', 'danger');
       }

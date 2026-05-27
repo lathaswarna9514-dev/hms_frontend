@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Front Desk Staff - eDoc HMS</title>
+  <title>Provision Staff - eDoc HMS</title>
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="stylesheet" href="../assets/css/components.css">
 </head>
@@ -21,35 +21,56 @@
       <!-- Content wrapper -->
       <div class="content-wrapper">
         
-        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
-          <div>
-            <h2 class="font-bold">Front Desk Staff</h2>
-            <p class="text-muted mt-1">Manage front desk staff across the platform.</p>
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+          <div class="card-header">
+            <h4 class="card-title">Provision Staff & Credentials</h4>
           </div>
-          <button class="btn btn-primary" onclick="openModal()">
-            + Add New
-          </button>
-        </div>
+          <div class="card-body">
+            <form id="createStaffForm">
+              
+              <div class="form-group">
+                <label class="form-label">Select Hospital</label>
+                <select id="hospital" class="form-control" required>
+                  <option value="">Loading hospitals...</option>
+                </select>
+              </div>
 
-        <div class="card">
-          <div class="table-responsive">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Details</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="dataTableBody">
-                <tr>
-                  <td colspan="4" class="text-center text-muted py-4">Fetching data...</td>
-                </tr>
-              </tbody>
-            </table>
+              <div class="form-group">
+                <label class="form-label">Role</label>
+                <select id="usertype" class="form-control" required>
+                  <option value="hospital-admin">Hospital Admin</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="nurse">Nurse</option>
+                  <option value="pharmacy">Pharmacy</option>
+                  <option value="lab">Lab Technician</option>
+                  <option value="frontdesk">Frontdesk</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="name" class="form-control" required placeholder="John Doe">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email (Username)</label>
+                <input type="email" id="email" class="form-control" required placeholder="user@hospital.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password</label>
+                <div style="position: relative;">
+<input type="password" id="password" class="form-control" required placeholder="Secure password" style="padding-right: 2.5rem;">
+  <button type="button" onclick="const p=this.previousElementSibling; p.type=p.type==='password'?'text':'password'; this.innerHTML=p.type==='password'?'<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>':'<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22\'/></svg>';" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); display: flex;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
+</div>
+              </div>
+              
+              <div class="flex justify-end gap-3 mt-6">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Credential</button>
+              </div>
+            </form>
           </div>
-          <div id="paginationContainer"></div>
         </div>
 
       </div>
@@ -116,41 +137,50 @@
       }
     ];
 
-    Utils.renderSidebar(superAdminMenu, '../super-admin/frontdesk.html', 'eDoc Console', 'Global platform');
-    Utils.renderHeader('Front Desk Staff');
+    Utils.renderSidebar(superAdminMenu, '../super-admin/create-staff.html', 'eDoc Console', 'Global platform');
+    Utils.renderHeader('Provision Staff');
 
-    let currentPage = 1;
-
-    async function loadStaff() {
+    // Load hospitals
+    async function loadHospitals() {
       try {
-        const response = await API.get(`/auth/super-admin/staff/?usertype=r&page=${currentPage}`);
-        const allStaff = response.data.results || response.data || [];
-        const totalCount = response.data.count !== undefined ? response.data.count : allStaff.length;
-        const tbody = document.getElementById('dataTableBody');
-        if (allStaff.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No front desk staff found.</td></tr>`;
-          return;
+        const res = await API.get('/hospitals/');
+        const select = document.getElementById('hospital');
+        if (res.results) {
+          select.innerHTML = '<option value="">Select a hospital...</option>' + 
+            res.results.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
         }
-        tbody.innerHTML = allStaff.map(s => `
-          <tr>
-            <td><span class="font-mono text-sm">${s.id}</span></td>
-            <td>
-              <strong>${s.name}</strong><br>
-              <span class="text-xs text-muted">${s.email}</span>
-            </td>
-            <td><span class="badge badge-secondary">${s.hospital_name || 'Unassigned'}</span></td>
-            <td><span class="text-sm">NIC: ${s.nic || '--'}</span></td>
-          </tr>
-        `).join('');
-        Utils.renderPagination('paginationContainer', totalCount, currentPage, 15, (newPage) => {
-          currentPage = newPage;
-          loadStaff();
-        });
       } catch (err) {
-        Utils.showToast('Failed to load front desk staff', 'danger');
+        console.error(err);
       }
     }
-    loadStaff();
+    loadHospitals();
+
+    document.getElementById('createStaffForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        hospital: document.getElementById('hospital').value,
+        usertype: document.getElementById('usertype').value,
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        is_active: true
+      };
+
+      try {
+        const response = await API.post('/auth/super-admin/staff/', payload);
+        if (response.id) {
+          Utils.showToast('Staff credential created successfully.', 'success');
+          document.getElementById('createStaffForm').reset();
+        } else if (response.email) {
+           Utils.showToast('Email already exists or invalid.', 'danger');
+        } else {
+           Utils.showToast(response.message || 'Error creating staff', 'danger');
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Error creating staff', 'danger');
+      }
+    });
   </script>
 </body>
 </html>

@@ -67,6 +67,7 @@
                 </tbody>
               </table>
             </div>
+            <div id="paginationContainer"></div>
           </div>
         </div>
 
@@ -217,15 +218,25 @@
     async function loadWorkspaceData() {
       try {
         const [rooms, beds] = await Promise.all([
-          API.get('/rooms/'),
-          API.get('/beds/')
+          API.get(`/rooms/?page=${currentRoomPage}`),
+          API.get(`/beds/?page=${currentBedPage}`)
         ]);
         // DRF returns paginated: { count, results:[...] }
         allRooms = rooms.data.results || rooms.data || [];
         allBeds = beds.data.results || beds.data || [];
+        const totalRooms = rooms.data.count !== undefined ? rooms.data.count : allRooms.length;
+        const totalBeds = beds.data.count !== undefined ? beds.data.count : allBeds.length;
         renderRoomsTable();
         renderBedsTable();
         populateRoomSelect();
+        Utils.renderPagination('roomPagination', totalRooms, currentRoomPage, 15, (newPage) => {
+          currentRoomPage = newPage;
+          loadWorkspaceData();
+        });
+        Utils.renderPagination('bedPagination', totalBeds, currentBedPage, 15, (newPage) => {
+          currentBedPage = newPage;
+          loadWorkspaceData();
+        });
       } catch (err) {
         Utils.showToast('Failed to load room and bed data', 'danger');
       }

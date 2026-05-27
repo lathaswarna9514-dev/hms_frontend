@@ -230,6 +230,110 @@ const Utils = {
         menu.classList.remove('open');
       }
     });
+  },
+
+  // Render Custom Pagination Component
+  renderPagination(containerId, totalCount, currentPage, pageSize, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Standardize variables to numbers
+    const count = parseInt(totalCount || 0, 10);
+    const pageVal = parseInt(currentPage || 1, 10);
+    const sizeVal = parseInt(pageSize || 15, 10);
+
+    const totalPages = Math.max(1, Math.ceil(count / sizeVal));
+    const prevPagesCount = Math.max(0, pageVal - 1);
+    const nextPagesCount = Math.max(0, totalPages - pageVal);
+
+    container.className = 'pagination-wrapper';
+    container.innerHTML = `
+      <!-- Component 1: Pagination Controls -->
+      <div class="pagination-container">
+        <span class="pagination-count-label prev-count">${prevPagesCount} prev</span>
+        <button class="pagination-btn prev-btn" ${pageVal <= 1 ? 'disabled' : ''} aria-label="Previous Page">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="pagination-current">Page ${pageVal} of ${totalPages}</span>
+        <button class="pagination-btn next-btn" ${pageVal >= totalPages ? 'disabled' : ''} aria-label="Next Page">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <span class="pagination-count-label next-count">${nextPagesCount} next</span>
+      </div>
+      
+      <!-- Component 2: Overall Records Count Stat (Separate Badge Component) -->
+      <div class="pagination-records-badge">
+        <span class="badge-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        </span>
+        <span class="badge-text">Total Records: <strong>${count}</strong></span>
+      </div>
+    `;
+
+    // Dynamic placement: Put pagination in the same row as heading + button
+    try {
+      const candidates = document.querySelectorAll(
+        '.content-wrapper h1, .content-wrapper h2, .content-wrapper h3, ' +
+        '.dash-body h1, .dash-body h2, .dash-body h3, ' +
+        '.dash-body p[style*="font-size: 20px"], .dash-body p[style*="font-size:20px"]'
+      );
+      let heading = null;
+      for (const el of candidates) {
+        if (!el.closest('.card') && !el.closest('.modal') && !el.closest('.popup') && !el.closest('.overlay')) {
+          heading = el;
+          break;
+        }
+      }
+
+      if (heading) {
+        // Find the main row — could be .flex.justify-between or heading's grandparent
+        let titleRow = heading.closest('.flex.justify-between');
+        if (!titleRow) titleRow = heading.closest('.page-title-row');
+
+        if (titleRow && !titleRow.classList.contains('page-title-row')) {
+          // Already a flex row with heading + button — mark it
+          titleRow.classList.add('page-title-row');
+        } else if (!titleRow) {
+          // No flex wrapper — the heading is in a plain div.
+          // Wrap heading's parent into a page-title-row
+          const headingParent = heading.parentNode;
+          const grandParent = headingParent.parentNode;
+          if (grandParent && !headingParent.classList.contains('page-title-row')) {
+            headingParent.classList.add('page-title-row');
+          }
+          titleRow = headingParent;
+        }
+
+        // Insert pagination-wrapper into the row (before the button if one exists)
+        if (titleRow && container.parentNode !== titleRow) {
+          // Find the button (last child that is a button/anchor)
+          const btn = titleRow.querySelector(':scope > button, :scope > a.btn');
+          if (btn) {
+            titleRow.insertBefore(container, btn);
+          } else {
+            titleRow.appendChild(container);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error moving pagination container next to heading:", e);
+    }
+
+    const prevBtn = container.querySelector('.prev-btn');
+    const nextBtn = container.querySelector('.next-btn');
+
+    if (prevBtn && pageVal > 1) {
+      prevBtn.onclick = (e) => {
+        e.preventDefault();
+        onPageChange(pageVal - 1);
+      };
+    }
+    if (nextBtn && pageVal < totalPages) {
+      nextBtn.onclick = (e) => {
+        e.preventDefault();
+        onPageChange(pageVal + 1);
+      };
+    }
   }
 };
 
